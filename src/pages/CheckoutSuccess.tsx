@@ -50,22 +50,23 @@ const CheckoutSuccess = () => {
               </div>
               <CardTitle className="text-3xl">Welcome to Premium! 🎉</CardTitle>
               <CardDescription className="text-lg mt-2">
-                Your subscription is now active. Enjoy unlimited access to all FitMatePro features!
+                Your subscription is active. Enjoy enhanced access to FitMatePro!
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="bg-primary/5 rounded-lg p-6 space-y-3">
                 <h3 className="font-semibold text-lg flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-primary" />
-                  What's Next?
+                  Your Premium Features
                 </h3>
                 <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>✓ Unlimited workout and nutrition logging</li>
-                  <li>✓ Custom workout builder</li>
-                  <li>✓ Advanced meal planning</li>
-                  <li>✓ Health data export</li>
-                  <li>✓ Premium themes</li>
+                  <li>✓ 150 AI coach chat messages per month</li>
+                  <li>✓ Full workout and nutrition logging</li>
+                  <li>✓ Wellness tracking and insights</li>
                 </ul>
+                <p className="text-xs text-muted-foreground mt-3 italic">
+                  More premium features are being added regularly — custom workout plans, advanced meal planning, health data export, and more. Stay tuned!
+                </p>
               </div>
               
               <div className="flex gap-3">

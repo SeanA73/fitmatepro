@@ -74,12 +74,10 @@ serve(async (req) => {
       customerId = customer.id
     }
 
-    // Price mapping for different plans
-    const priceMapping: Record<string, { stripePrice: string, planType: string }> = {
-      'price_premium_monthly': { stripePrice: 'price_1234premium_monthly', planType: 'premium' },
-      'price_premium_annual': { stripePrice: 'price_1234premium_annual', planType: 'premium' },
-      'price_pro_monthly': { stripePrice: 'price_1234pro_monthly', planType: 'pro' },
-      'price_pro_annual': { stripePrice: 'price_1234pro_annual', planType: 'pro' }
+    // Resolve the Stripe Price ID from env vars (set via `supabase secrets set`)
+    const priceMapping: Record<string, { envKey: string, planType: string }> = {
+      'price_premium_monthly': { envKey: 'STRIPE_PRICE_PREMIUM_MONTHLY', planType: 'premium' },
+      'price_premium_annual': { envKey: 'STRIPE_PRICE_PREMIUM_ANNUAL', planType: 'premium' },
     }
 
     const priceInfo = priceMapping[priceId]
@@ -90,18 +88,27 @@ serve(async (req) => {
       )
     }
 
+    const stripePrice = Deno.env.get(priceInfo.envKey)
+    if (!stripePrice) {
+      console.error(`Missing env var ${priceInfo.envKey}. Set it via: supabase secrets set ${priceInfo.envKey}=price_xxx`)
+      return new Response(
+        JSON.stringify({ error: 'Pricing not configured. Please contact support.' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ['card'],
       line_items: [
         {
-          price: priceInfo.stripePrice,
+          price: stripePrice,
           quantity: 1,
         },
       ],
       mode: 'subscription',
-      success_url: `${req.headers.get('origin')}/subscription-success?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${req.headers.get('origin')}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.get('origin')}/`,
       subscription_data: {
         trial_period_days: 7,

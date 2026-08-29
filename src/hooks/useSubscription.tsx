@@ -40,7 +40,7 @@ export const useSubscription = () => {
         .from('subscriptions')
         .select('*')
         .eq('user_id', user.id)
-        .eq('status', 'active')
+        .in('status', ['active', 'trialing'])
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -209,13 +209,6 @@ export const useSubscription = () => {
     }
   };
 
-  // Cancel subscription.
-  //
-  // WARNING: the 'cancel-subscription' edge function does not exist — only
-  // create-checkout-session and stripe-webhook are deployed. Every call fails.
-  // The call is kept so this starts working the moment the function ships, but
-  // the failure must be honest: "Please try again" is a lie when the endpoint
-  // is missing, and the UI promises "Cancel anytime".
   const cancelSubscription = async () => {
     if (!subscription?.stripe_subscription_id) {
       toast({
