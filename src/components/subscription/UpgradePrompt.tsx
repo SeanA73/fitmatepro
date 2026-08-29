@@ -34,9 +34,9 @@ const UPGRADE_SCENARIOS = {
   'ai_limit_reached': {
     icon: <Star className="h-6 w-6" />,
     title: "FitMatePro wants to help more! 🤖",
-    message: "You've used your daily coach chat messages. Upgrade for unlimited access!",
-    benefits: ["Unlimited coach chat", "Custom workout builder", "Advanced meal planning"],
-    cta: "Get Unlimited Coaching",
+    message: "You've used your 7 daily coach chat messages. Upgrade to Premium for 150 messages per month!",
+    benefits: ["150 coach chats per month", "Custom workout builder", "Advanced meal planning"],
+    cta: "Get Premium Coaching",
     alternativeCta: "Maybe later",
     urgency: "medium"
   },
