@@ -97,7 +97,9 @@ for (const fragment of routeFragments) {
 
 const covered = new Set(found.map((f) => f.route));
 // /auth is public but intentionally noindex, so it is expected to be absent.
-const expectedAbsent = new Set(['/auth']);
+// /features/ai-coaching and /features/community-features are noindex — pages
+// built on fabricated testimonials and AI claims we no longer stand behind.
+const expectedAbsent = new Set(['/auth', '/features/ai-coaching', '/features/community-features']);
 const missing = publicRoutes.filter((r) => !covered.has(r) && !expectedAbsent.has(r));
 
 if (missing.length) {

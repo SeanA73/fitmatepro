@@ -71,43 +71,24 @@ const CommunityFeatures = () => {
     {
       name: "Strength Athletes",
       description: "For serious lifters and strength training enthusiasts",
-      members: "1.8K+ members",
+      members: "Active community",
       badge: "Premium"
     },
     {
       name: "Cardio Warriors",
       description: "Running, cycling, and cardio enthusiasts unite",
-      members: "3.2K+ members",
+      members: "Active community",
       badge: "Premium"
     },
     {
       name: "Elite Performance",
       description: "Advanced athletes and competitive fitness",
-      members: "950+ members",
+      members: "Active community",
       badge: "Premium"
     }
   ];
 
-  const testimonials = [
-    {
-      name: "Sarah M.",
-      role: "Community Member",
-      text: "The support I've received from the FitMatePro community has been incredible. I've made lifelong friends here!",
-      rating: 5
-    },
-    {
-      name: "Mike R.",
-      role: "Challenge Winner",
-      text: "Competing in monthly challenges keeps me motivated and pushes me to achieve goals I never thought possible.",
-      rating: 5
-    },
-    {
-      name: "Lisa K.",
-      role: "Group Leader",
-      text: "Leading group workouts has not only helped others but has also improved my own fitness journey dramatically.",
-      rating: 5
-    }
-  ];
+  const testimonials: { name: string; role: string; text: string; rating: number }[] = [];
 
   // Free and Premium are the only tiers. There is no Pro tier.
   const getBadgeVariant = (badge: string) => {
@@ -124,6 +105,7 @@ const CommunityFeatures = () => {
         title="Community — Train Alongside Other FitMatePro Members"
         description="Share milestones, join monthly challenges, find an accountability partner and swap advice with other members working toward similar fitness goals."
         path="/features/community-features"
+        noindex
       />
       <FitMateHeader />
       
@@ -159,9 +141,9 @@ const CommunityFeatures = () => {
               <UserPlus className="w-4 h-4 mr-2" />
               {user ? "Go to Dashboard" : "Create an Account"}
             </Button>
-            <Button variant="outline" size="lg" onClick={() => navigate("/features/ai-coaching")}>
+            <Button variant="outline" size="lg" onClick={() => navigate("/chat")}>
               <Zap className="w-4 h-4 mr-2" />
-              Try AI Coaching
+              Try Coaching
             </Button>
           </div>
         </div>

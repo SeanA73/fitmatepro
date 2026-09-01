@@ -98,7 +98,7 @@ export const AdvancedMealPlanning = () => {
             <Badge variant="secondary" className="ml-2">Premium</Badge>
           </CardTitle>
           <CardDescription>
-            AI-powered weekly meal planning with shopping lists and macro tracking
+            Weekly meal planning with shopping lists and macro tracking
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -122,7 +122,7 @@ export const AdvancedMealPlanning = () => {
               <Badge variant="default" className="ml-2">Premium</Badge>
             </CardTitle>
             <CardDescription>
-              AI-generated weekly meal plans tailored to your goals and preferences
+              Weekly meal plans tailored to your goals and preferences
             </CardDescription>
           </div>
           <Button onClick={generateMealPlan} className="gap-2">

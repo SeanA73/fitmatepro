@@ -81,8 +81,8 @@ const WorkoutPlanning = () => {
             </div>
             
             <p className="text-xl text-muted-foreground mb-8 max-w-3xl">
-              Get AI-generated workout plans that adapt to your fitness level, goals, and available equipment. 
-              Our intelligent system creates personalized routines that evolve with your progress.
+              Get workout plans that adapt to your fitness level, goals, and available equipment.
+              Routines that evolve with your progress.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4">

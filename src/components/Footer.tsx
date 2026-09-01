@@ -24,7 +24,7 @@ const Footer = () => {
               <span className="text-xl font-bold text-foreground">FitMatePro</span>
             </Link>
             <p className="text-sm text-muted-foreground">
-              Your AI-powered wellness companion for a healthier, happier life.
+              Your wellness companion for a healthier, happier life.
             </p>
           </div>
 
@@ -94,11 +94,6 @@ const Footer = () => {
               <li>
                 <Link to="/features/nutrition-tracking" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                   Nutrition Tracking
-                </Link>
-              </li>
-              <li>
-                <Link to="/features/ai-coaching" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  AI Coaching
                 </Link>
               </li>
               <li>
