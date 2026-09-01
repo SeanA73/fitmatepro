@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import Stripe from 'https://esm.sh/stripe@14.21.0'
+import Stripe from 'https://esm.sh/stripe@17.4.0?target=deno&no-check'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
   apiVersion: '2023-10-16',
@@ -31,12 +31,16 @@ serve(async (req) => {
 
     let event: Stripe.Event
 
-    try {
-      event = stripe.webhooks.constructEvent(
-        body,
-        signature,
-        Deno.env.get('STRIPE_WEBHOOK_SECRET') || ''
-      )
+	   const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET') || ''
+	   console.log("DEBUG: Secret length is", webhookSecret.length)
+	   console.log("DEBUG: Secret starts with", webhookSecret.substring(0, 6))
+
+	   try {
+	     event = stripe.webhooks.constructEvent(
+	       body,
+	       signature,
+	       webhookSecret
+	     )
     } catch (err) {
       console.error('Webhook signature verification failed:', err)
       return new Response('Invalid signature', { status: 400 })
