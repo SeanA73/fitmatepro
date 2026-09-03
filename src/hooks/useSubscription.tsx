@@ -7,7 +7,7 @@ export interface Subscription {
   id: string;
   user_id: string;
   plan_type: 'free' | 'premium';
-  status: 'active' | 'canceled' | 'past_due' | 'unpaid';
+  status: 'active' | 'trialing' | 'canceled' | 'past_due' | 'unpaid';
   current_period_start: string;
   current_period_end: string;
   stripe_subscription_id?: string;

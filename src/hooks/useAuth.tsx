@@ -296,7 +296,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         description: "Your profile has been updated successfully.",
       });
 
-      return { data: { user, session }, error: null };
+      return { data, error: null };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       toast({
