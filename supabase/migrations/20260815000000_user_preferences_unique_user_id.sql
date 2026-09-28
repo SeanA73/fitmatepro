@@ -1,17 +1,25 @@
--- =============================================================================
--- user_preferences: enforce one row per user
--- =============================================================================
--- 20260812000000_initial_schema.sql creates user_preferences with a surrogate
--- `id` PRIMARY KEY and a bare `user_id UUID REFERENCES profiles(id)` — nothing
--- prevents two preferences rows for the same user.  The handle_new_user()
--- trigger inserts one row per user, but a second INSERT (e.g. a retry, or a
--- direct SQL call) would silently create a duplicate that confuses every
--- downstream query.
+-- user_preferences is 1:1 with profiles — the on_profile_created trigger seeds
+-- exactly one row per profile, and src/pages/Index.tsx reads it with
+-- .maybeSingle(), which errors outright if a user ever ends up with two rows.
+-- That invariant was never enforced in the schema: user_id had a foreign key but
+-- no unique constraint.
 --
--- A UNIQUE index on user_id closes that gap.  The application already assumes
--- at most one row per user (useAuth reads .maybeSingle()), so this makes the
--- database match the code.
--- =============================================================================
+-- The visible symptom was onboarding. src/pages/Onboarding.tsx wrote its
+-- completion flag with .upsert({ onConflict: 'user_id' }); Postgres validates the
+-- ON CONFLICT target when it plans the statement, before RLS or any row is
+-- touched, so every call failed with 42P10 ("there is no unique or exclusion
+-- constraint matching the ON CONFLICT specification"). Onboarding could never be
+-- completed. The client no longer upserts, but the invariant is worth enforcing
+-- so the next writer cannot silently create a duplicate.
 
-CREATE UNIQUE INDEX IF NOT EXISTS user_preferences_user_id_key
-    ON public.user_preferences (user_id);
+-- Collapse any pre-existing duplicates onto the oldest row per user before the
+-- constraint is added. Expected to be a no-op: the only writer that could have
+-- created duplicates is the upsert above, which never executed successfully.
+DELETE FROM public.user_preferences a
+USING public.user_preferences b
+WHERE a.user_id IS NOT NULL
+  AND a.user_id = b.user_id
+  AND (a.created_at, a.id) > (b.created_at, b.id);
+
+ALTER TABLE public.user_preferences
+  ADD CONSTRAINT user_preferences_user_id_key UNIQUE (user_id);

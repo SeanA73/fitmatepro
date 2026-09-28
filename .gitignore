@@ -29,5 +29,5 @@ dist-ssr
 *.sw?
 .qwen/
 
-# Supabase CLI scratch state
+# Supabase CLI local state (machine-specific)
 supabase/.temp/

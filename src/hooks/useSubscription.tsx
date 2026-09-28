@@ -7,7 +7,7 @@ export interface Subscription {
   id: string;
   user_id: string;
   plan_type: 'free' | 'premium';
-  status: 'active' | 'canceled' | 'past_due' | 'unpaid';
+  status: 'active' | 'trialing' | 'canceled' | 'past_due' | 'unpaid';
   current_period_start: string;
   current_period_end: string;
   stripe_subscription_id?: string;
@@ -40,7 +40,7 @@ export const useSubscription = () => {
         .from('subscriptions')
         .select('*')
         .eq('user_id', user.id)
-        .eq('status', 'active')
+        .in('status', ['active', 'trialing'])
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -220,13 +220,6 @@ export const useSubscription = () => {
     window.location.href = data.url;
   };
 
-  // Cancel subscription.
-  //
-  // WARNING: this project has no edge functions deployed at all — the functions
-  // list is empty, so 'cancel-subscription' 404s just like every other invoke.
-  // The call is kept so this starts working the moment the function ships, but
-  // the failure must be honest: "Please try again" is a lie when the endpoint
-  // is missing, and the UI promises "Cancel anytime".
   const cancelSubscription = async () => {
     if (!subscription?.stripe_subscription_id) {
       toast({

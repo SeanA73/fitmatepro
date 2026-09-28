@@ -2,13 +2,13 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Send, Heart, Zap, Moon, Brain, Target, Lock } from "lucide-react";
+import { ArrowLeft, Send, Heart, Zap, Moon, Brain, Target, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSubscription } from "@/hooks/useSubscription";
 import { UpgradePrompt } from "@/components/subscription/UpgradePrompt";
 import { useToast } from "@/hooks/use-toast";
 import FitMateHeader from "@/components/FitMateHeader";
+import { supabase } from "@/integrations/supabase/client";
 
 const Chat = () => {
   const navigate = useNavigate();
@@ -16,7 +16,10 @@ const Chat = () => {
   const { toast } = useToast();
   const [message, setMessage] = useState("");
   const [dailyUsage, setDailyUsage] = useState(0);
+  const [monthlyUsage, setMonthlyUsage] = useState(0);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const [userDismissedPrompt, setUserDismissedPrompt] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState([
     {
       type: "fitmate",
@@ -34,66 +37,125 @@ const Chat = () => {
   ];
 
   useEffect(() => {
-    // Check usage for free users
     const checkUsage = async () => {
-      if (!hasPremiumAccess()) {
-        const usage = await getCurrentUsage('ai_interactions_per_day', 'daily');
-        setDailyUsage(usage);
-        const canUse = await canUseFeature('ai_interactions_per_day', 'daily');
-        if (!canUse) {
-          setShowUpgradePrompt(true);
+      try {
+        if (hasPremiumAccess()) {
+          const usage = await getCurrentUsage('ai_interactions_per_month', 'monthly');
+          setMonthlyUsage(usage);
+          const canUse = await canUseFeature('ai_interactions_per_month', 'monthly');
+          if (!canUse && !userDismissedPrompt) {
+            setShowUpgradePrompt(true);
+          }
+        } else {
+          const usage = await getCurrentUsage('ai_interactions_per_day', 'daily');
+          setDailyUsage(usage);
+          const canUse = await canUseFeature('ai_interactions_per_day', 'daily');
+          if (!canUse && !userDismissedPrompt) {
+            setShowUpgradePrompt(true);
+          }
         }
+      } catch {
+        setDailyUsage(0);
+        setMonthlyUsage(0);
       }
     };
     checkUsage();
-  }, [hasPremiumAccess, canUseFeature, getCurrentUsage]);
+  }, [hasPremiumAccess, canUseFeature, getCurrentUsage, userDismissedPrompt]);
 
   const sendMessage = async () => {
-    if (!message.trim()) return;
+    if (!message.trim() || isLoading) return;
 
-    // Check usage limits for free users
-    if (!hasPremiumAccess()) {
-      const canUse = await canUseFeature('ai_interactions_per_day', 'daily');
-      if (!canUse) {
-        setShowUpgradePrompt(true);
-        toast({
-          title: "Daily limit reached",
-          description: "You've used all 3 free messages today. Upgrade to Premium for unlimited access.",
-          variant: "destructive",
-        });
-        return;
+    // Check usage limits
+    if (hasPremiumAccess()) {
+      try {
+        const canUse = await canUseFeature('ai_interactions_per_month', 'monthly');
+        if (!canUse) {
+          setShowUpgradePrompt(true);
+          setUserDismissedPrompt(false);
+          toast({
+            title: "Monthly limit reached",
+            description: "You've used all 150 coach chat messages this month. Contact us if you need more.",
+            variant: "destructive",
+          });
+          return;
+        }
+      } catch {
+        // If check fails, allow the message (fail open)
       }
-      await incrementUsage('ai_interactions_per_day', 'daily');
-      const newUsage = await getCurrentUsage('ai_interactions_per_day', 'daily');
-      setDailyUsage(newUsage);
+      try {
+        await incrementUsage('ai_interactions_per_month', 'monthly');
+        const newUsage = await getCurrentUsage('ai_interactions_per_month', 'monthly');
+        setMonthlyUsage(newUsage);
+      } catch {
+        // Increment failure is non-blocking
+      }
+    } else {
+      try {
+        const canUse = await canUseFeature('ai_interactions_per_day', 'daily');
+        if (!canUse) {
+          setShowUpgradePrompt(true);
+          setUserDismissedPrompt(false);
+          toast({
+            title: "Daily limit reached",
+            description: "You've used all 7 free messages today. Upgrade to Premium for 150 messages per month.",
+            variant: "destructive",
+          });
+          return;
+        }
+      } catch {
+        // If check fails, allow the message (fail open)
+      }
+      try {
+        await incrementUsage('ai_interactions_per_day', 'daily');
+        const newUsage = await getCurrentUsage('ai_interactions_per_day', 'daily');
+        setDailyUsage(newUsage);
+      } catch {
+        // Increment failure is non-blocking
+      }
     }
-    
+
+    const userMessage = message.trim();
+    setMessage("");
+
     setMessages(prev => [...prev, {
       type: "user",
-      content: message,
+      content: userMessage,
       time: "Just now"
     }]);
-    
-    // DEMO ONLY: there is no model behind this. These are five fixed sample
-    // replies chosen at random. The usage metering above is deliberately kept
-    // wired so it is already correct when a real model is connected.
-    setTimeout(() => {
-      const responses = [
-        "That's wonderful! I love your enthusiasm. Let's work together to make today amazing. What would you like to focus on first?",
-        "I hear you! It's completely normal to have ups and downs. Remember, every small step counts. What's one thing we could do together right now to help you feel a bit better?",
-        "Great question! Based on your progress, I think we should focus on building consistency rather than intensity. Small, sustainable changes lead to lasting results.",
-        "I'm so proud of your dedication! You've been making incredible progress. Let's celebrate these wins and plan your next steps forward.",
-        "That sounds challenging, but you're not alone in this. Let's break this down into smaller, manageable pieces. What feels most important to address first?"
-      ];
-      
+
+    setIsLoading(true);
+
+    try {
+      // Build conversation history (include the greeting + all messages)
+      const conversationHistory = messages
+        .filter(m => m.type === 'fitmate' || m.type === 'user')
+        .map(m => ({ type: m.type, content: m.content }))
+        .concat({ type: 'user', content: userMessage });
+
+      const { data, error } = await supabase.functions.invoke('ai-coach-chat', {
+        body: { messages: conversationHistory },
+      });
+
+      if (error) {
+        console.error('AI chat error:', error);
+        throw error;
+      }
+
       setMessages(prev => [...prev, {
-        type: "fitmate", 
-        content: responses[Math.floor(Math.random() * responses.length)],
+        type: "fitmate",
+        content: data?.reply || "I'm here to help! Could you try rephrasing that?",
         time: "Just now"
       }]);
-    }, 1000);
-    
-    setMessage("");
+    } catch (err) {
+      console.error('Failed to get AI response:', err);
+      setMessages(prev => [...prev, {
+        type: "fitmate",
+        content: "I'm having a bit of trouble right now — could you try again in a moment?",
+        time: "Just now"
+      }]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleQuickAction = (action: string) => {
@@ -115,13 +177,14 @@ const Chat = () => {
               <h1 className="text-xl font-bold">Coach Chat</h1>
               <p className="text-sm text-muted-foreground">
                 {hasPremiumAccess()
-                  ? 'Preview — replies are sample text, not a live coach yet'
-                  : `Preview — replies are sample text (${3 - dailyUsage}/3 messages today)`}
+                  ? monthlyUsage >= 150
+                    ? 'Monthly limit reached'
+                    : `${150 - monthlyUsage}/150 messages remaining this month`
+                  : dailyUsage >= 7
+                    ? 'Daily limit reached — upgrade for more'
+                    : `Free: ${7 - dailyUsage}/7 messages remaining today`}
               </p>
             </div>
-            <Badge variant="outline">
-              Demo
-            </Badge>
           </div>
         </div>
       </div>
@@ -155,8 +218,8 @@ const Chat = () => {
           {messages.map((msg, index) => (
             <div key={index} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg ${
-                msg.type === 'user' 
-                  ? 'bg-wellness-gradient text-white' 
+                msg.type === 'user'
+                  ? 'bg-wellness-gradient text-white'
                   : 'bg-card border border-border'
               }`}>
                 {msg.type === 'fitmate' && (
@@ -167,7 +230,7 @@ const Chat = () => {
                     <span className="text-xs font-medium text-success">FitMatePro</span>
                   </div>
                 )}
-                <p className="text-sm">{msg.content}</p>
+                <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                 <span className={`text-xs mt-2 block ${
                   msg.type === 'user' ? 'text-white/70' : 'text-muted-foreground'
                 }`}>
@@ -176,6 +239,22 @@ const Chat = () => {
               </div>
             </div>
           ))}
+          {isLoading && (
+            <div className="flex justify-start">
+              <div className="max-w-xs lg:max-w-md px-4 py-3 rounded-lg bg-card border border-border">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-6 h-6 bg-success rounded-full flex items-center justify-center">
+                    <Heart className="w-3 h-3 text-white" />
+                  </div>
+                  <span className="text-xs font-medium text-success">FitMatePro</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Thinking...</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Message Input */}
@@ -185,10 +264,11 @@ const Chat = () => {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+            disabled={isLoading}
             className="flex-1"
           />
-          <Button onClick={sendMessage} variant="wellness">
-            <Send className="w-4 h-4" />
+          <Button onClick={sendMessage} variant="wellness" disabled={isLoading || !message.trim()}>
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           </Button>
         </div>
 
@@ -199,7 +279,10 @@ const Chat = () => {
               variant="modal"
               trigger="ai_limit_reached"
               featureName="ai_interactions_per_day"
-              onClose={() => setShowUpgradePrompt(false)}
+              onClose={() => {
+                setShowUpgradePrompt(false);
+                setUserDismissedPrompt(true);
+              }}
             />
           </div>
         )}

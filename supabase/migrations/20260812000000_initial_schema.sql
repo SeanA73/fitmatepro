@@ -538,7 +538,7 @@ DECLARE
   user_plan TEXT;
   limit_value INTEGER;
   current_usage INTEGER;
-  period_start TIMESTAMP WITH TIME ZONE;
+  v_period_start TIMESTAMP WITH TIME ZONE;
 BEGIN
   user_plan := public.get_user_plan(user_uuid);
 
@@ -554,20 +554,20 @@ BEGIN
 
   CASE period
     WHEN 'daily' THEN
-      period_start := date_trunc('day', NOW());
+      v_period_start := date_trunc('day', NOW());
     WHEN 'weekly' THEN
-      period_start := date_trunc('week', NOW());
+      v_period_start := date_trunc('week', NOW());
     WHEN 'monthly' THEN
-      period_start := date_trunc('month', NOW());
+      v_period_start := date_trunc('month', NOW());
     ELSE
-      period_start := NOW() - INTERVAL '1 day';
+      v_period_start := NOW() - INTERVAL '1 day';
   END CASE;
 
   SELECT COALESCE(SUM(ut.usage_count), 0) INTO current_usage
   FROM public.usage_tracking ut
   WHERE ut.user_id = user_uuid
     AND ut.feature_type = feature
-    AND ut.period_start >= period_start;
+    AND ut.period_start >= v_period_start;
 
   RETURN current_usage < limit_value;
 END;
@@ -584,21 +584,21 @@ SECURITY DEFINER
 SET search_path = 'public'
 AS $$
 DECLARE
-  period_start TIMESTAMP WITH TIME ZONE;
+  v_period_start TIMESTAMP WITH TIME ZONE;
 BEGIN
   CASE period
     WHEN 'daily' THEN
-      period_start := date_trunc('day', NOW());
+      v_period_start := date_trunc('day', NOW());
     WHEN 'weekly' THEN
-      period_start := date_trunc('week', NOW());
+      v_period_start := date_trunc('week', NOW());
     WHEN 'monthly' THEN
-      period_start := date_trunc('month', NOW());
+      v_period_start := date_trunc('month', NOW());
     ELSE
-      period_start := NOW();
+      v_period_start := NOW();
   END CASE;
 
   INSERT INTO public.usage_tracking (user_id, feature_type, usage_count, reset_period, period_start)
-  VALUES (user_uuid, feature, 1, period, period_start)
+  VALUES (user_uuid, feature, 1, period, v_period_start)
   ON CONFLICT (user_id, feature_type, period_start)
   DO UPDATE SET
     usage_count = usage_tracking.usage_count + 1,

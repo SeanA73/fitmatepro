@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run sitemap && vite build",
+    "typecheck": "tsc -b --force",
+    "build": "npm run typecheck && npm run sitemap && vite build",
     "build:dev": "npm run sitemap && vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",

@@ -43,7 +43,7 @@ const PRICING_PLANS: PricingPlan[] = [
     features: [
       'Basic workout tracking (3/week)',
       'Simple nutrition logging',
-      'Coach chat preview (3 messages/day)',
+      'Coach chat (7 messages/day)',
       'Community access',
       'Basic progress charts',
       'Manual data entry'
@@ -62,6 +62,7 @@ const PRICING_PLANS: PricingPlan[] = [
     description: 'Unlock everything FitMatePro has to offer',
     features: [
       'Unlimited workout and nutrition logging',
+      'Coach chat (150 messages/month)',
       'Custom workout builder',
       // 'Advanced meal planning' is not sold here: AdvancedMealPlanning is a
       // static mock, and meal_plans/meal_plan_items/recipes/shopping_lists were

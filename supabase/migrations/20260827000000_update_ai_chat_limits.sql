@@ -1,17 +1,15 @@
--- =============================================================================
--- update_ai_chat_limits — adjust AI coaching interaction limits
--- =============================================================================
--- Applied remotely on 2026-08-27 as part of the AI coach chat feature
--- deployment. The plan_limits rows for ai_interactions_per_day remain at
--- 3/day for free and NULL (unlimited) for premium.
---
--- NOTE: The exact SQL for this migration was reconstructed from schema
--- inspection. If the original did more than this, it was a no-op on the
--- data that persists today.
--- =============================================================================
+-- Update AI chat limits:
+--   Free:    3/day  → 7/day
+--   Premium: unlimited → 150/month
 
--- Ensure the free tier AI interaction limit is recorded.
--- (The initial schema already seeds this; this is a safety upsert.)
+-- Free tier: 3 → 7 daily
+UPDATE public.plan_limits
+SET limit_value = 7
+WHERE plan_type = 'free' AND feature_name = 'ai_interactions_per_day';
+
+-- Premium tier: remove old unlimited daily row, insert monthly limit
+DELETE FROM public.plan_limits
+WHERE plan_type = 'premium' AND feature_name = 'ai_interactions_per_day';
+
 INSERT INTO public.plan_limits (plan_type, feature_name, limit_value, limit_period)
-VALUES ('free', 'ai_interactions_per_day', 3, 'daily')
-ON CONFLICT DO NOTHING;
+VALUES ('premium', 'ai_interactions_per_month', 150, 'monthly');

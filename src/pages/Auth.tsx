@@ -500,7 +500,7 @@ const Auth = () => {
                     </div>
                     
                     <div>
-                      <Label htmlFor="signup-dob">Date of Birth</Label>
+                      <Label htmlFor="signup-dob">Date of Birth <span className="text-muted-foreground font-normal">(optional)</span></Label>
                       <div className="relative">
                         <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
@@ -514,7 +514,7 @@ const Auth = () => {
                     </div>
                     
                     <div>
-                      <Label htmlFor="signup-gender">Gender</Label>
+                      <Label htmlFor="signup-gender">Gender <span className="text-muted-foreground font-normal">(optional)</span></Label>
                       <Select value={signUpData.gender} onValueChange={(value) => setSignUpData({...signUpData, gender: value})}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select" />
@@ -529,7 +529,7 @@ const Auth = () => {
                     </div>
                     
                     <div>
-                      <Label htmlFor="signup-height">Height (cm)</Label>
+                      <Label htmlFor="signup-height">Height (cm) <span className="text-muted-foreground font-normal">(optional)</span></Label>
                       <div className="relative">
                         <Ruler className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
@@ -544,7 +544,7 @@ const Auth = () => {
                     </div>
                     
                     <div>
-                      <Label htmlFor="signup-weight">Weight (kg)</Label>
+                      <Label htmlFor="signup-weight">Weight (kg) <span className="text-muted-foreground font-normal">(optional)</span></Label>
                       <div className="relative">
                         <Weight className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
@@ -559,7 +559,7 @@ const Auth = () => {
                     </div>
                     
                     <div className="col-span-2">
-                      <Label htmlFor="signup-activity">Activity Level</Label>
+                      <Label htmlFor="signup-activity">Activity Level <span className="text-muted-foreground font-normal">(optional)</span></Label>
                       <Select value={signUpData.activity_level} onValueChange={(value) => setSignUpData({...signUpData, activity_level: value})}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select your activity level" />
@@ -575,7 +575,7 @@ const Auth = () => {
                     </div>
                     
                     <div className="col-span-2">
-                      <Label>Fitness Goals</Label>
+                      <Label>Fitness Goals <span className="text-muted-foreground font-normal">(optional)</span></Label>
                       <div className="grid grid-cols-2 gap-2 mt-2">
                         {fitnessGoals.map(goal => (
                           <div key={goal} className="flex items-center space-x-2">
