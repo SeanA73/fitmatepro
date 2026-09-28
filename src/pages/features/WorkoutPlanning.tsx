@@ -7,10 +7,16 @@ import { ArrowLeft, Dumbbell, Play, Calendar, Target, Users, BarChart3 } from "l
 import FitMateHeader from "@/components/FitMateHeader";
 import { PersonalizedRecommendations } from "@/components/shop/PersonalizedRecommendations";
 import { useAuth } from "@/hooks/useAuth";
+import { Seo } from '@/components/Seo';
 
 const WorkoutPlanning = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  // This page is public marketing. Signed-in users go straight to the feature;
+  // only signed-out visitors are sent to sign-up.
+  const startHere = () => navigate(user ? "/workouts" : "/auth?plan=free");
+  const ctaLabel = user ? "Go to Workouts" : "Get Started Free";
 
   const features = [
     {
@@ -44,6 +50,11 @@ const WorkoutPlanning = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title="Workout Planning — Programs Built Around Your Goals"
+        description="Pick a program for weight loss, muscle gain, endurance or strength, training three to six days a week, at home or in the gym. Track every set and rep."
+        path="/features/workout-planning"
+      />
       <FitMateHeader />
       
       <main className="pt-20">
@@ -70,14 +81,14 @@ const WorkoutPlanning = () => {
             </div>
             
             <p className="text-xl text-muted-foreground mb-8 max-w-3xl">
-              Get AI-generated workout plans that adapt to your fitness level, goals, and available equipment. 
-              Our intelligent system creates personalized routines that evolve with your progress.
+              Get workout plans that adapt to your fitness level, goals, and available equipment.
+              Routines that evolve with your progress.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" onClick={() => navigate("/auth")}>
+              <Button size="lg" onClick={startHere}>
                 <Play className="w-5 h-5 mr-2" />
-                Start Planning Workouts
+                {user ? "Go to Workouts" : "Start Planning Workouts"}
               </Button>
               <Button size="lg" variant="outline" onClick={() => navigate("/")}>
                 View All Features
@@ -156,8 +167,8 @@ const WorkoutPlanning = () => {
               <p className="text-xl mb-8 text-white/90 max-w-2xl mx-auto">
                 Join FitMatePro today and get your first personalized workout plan in minutes.
               </p>
-              <Button size="lg" variant="secondary" onClick={() => navigate("/auth")}>
-                Get Started Free
+              <Button size="lg" variant="secondary" onClick={startHere}>
+                {ctaLabel}
               </Button>
             </div>
           </div>

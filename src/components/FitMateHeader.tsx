@@ -6,11 +6,15 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, Link } from "react-router-dom";
 import { useTheme } from "@/contexts/ThemeContext";
 import { NotificationCenter } from "@/components/NotificationCenter";
+import { useHasProducts } from "@/hooks/useHasProducts";
 
 const FitMateHeader = () => {
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
   const { theme, setTheme, actualTheme } = useTheme();
+  // Shop, Coach's Picks and AI Recommendations all read affiliate_products.
+  // Hidden while that catalogue is empty rather than promoting blank pages.
+  const { hasProducts } = useHasProducts();
 
   const handleSignOut = async () => {
     await signOut();
@@ -41,13 +45,25 @@ const FitMateHeader = () => {
             </Button>
           </Link>
           
-          <Link to="/coach-picks">
-            <Button variant="ghost" size="sm" className="hidden sm:flex gap-2">
-              <Award className="w-4 h-4" />
-              Coach's Picks
-            </Button>
-          </Link>
-          
+          {/* /coach-picks is a protected route, so this must not show to
+              signed-out visitors on the public landing page. */}
+          {user && hasProducts && (
+            <Link to="/coach-picks">
+              <Button variant="ghost" size="sm" className="hidden sm:flex gap-2">
+                <Award className="w-4 h-4" />
+                Coach's Picks
+              </Button>
+            </Link>
+          )}
+
+          {!user && (
+            <Link to="/pricing">
+              <Button variant="ghost" size="sm" className="hidden sm:flex">
+                Pricing
+              </Button>
+            </Link>
+          )}
+
           {user ? (
             <>
               {/* Notifications */}
@@ -68,14 +84,18 @@ const FitMateHeader = () => {
                     <User className="w-4 h-4 mr-2" />
                     Profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/recommendations")}>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    AI Recommendations
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/shop")}>
-                    <ShoppingBag className="w-4 h-4 mr-2" />
-                    Shop
-                  </DropdownMenuItem>
+                  {hasProducts && (
+                    <>
+                      <DropdownMenuItem onClick={() => navigate("/recommendations")}>
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Recommendations
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/shop")}>
+                        <ShoppingBag className="w-4 h-4 mr-2" />
+                        Shop
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   <DropdownMenuItem onClick={() => navigate("/profile")}>
                     <Settings className="w-4 h-4 mr-2" />
                     Settings
@@ -88,7 +108,7 @@ const FitMateHeader = () => {
                     <Crown className="w-4 h-4 mr-2" />
                     Premium Features
                   </DropdownMenuItem>
-                  {/* Admin Dashboard link removed: /admin route disabled pending admin RLS policies */}
+                  {/* No Admin Dashboard link: there is no admin UI (see src/App.tsx) */}
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="w-4 h-4 mr-2" />
                     Sign Out

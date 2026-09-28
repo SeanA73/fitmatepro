@@ -5,9 +5,16 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Brain, Heart, Moon, Sunrise, Wind, Smile } from "lucide-react";
 import FitMateHeader from "@/components/FitMateHeader";
+import { useAuth } from "@/hooks/useAuth";
+import { Seo } from '@/components/Seo';
 
 const MentalWellness = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // Public marketing page. The daily check-in lives on the dashboard.
+  const startHere = () => navigate(user ? "/" : "/auth?plan=free");
+  const ctaLabel = user ? "Go to Daily Check-In" : "Begin Wellness Program";
 
   const features = [
     {
@@ -61,6 +68,11 @@ const MentalWellness = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title="Mental Wellness — Daily Mood, Energy and Sleep Logs"
+        description="Record how you feel each day with quick mood, energy and sleep check-ins, then look back over weeks of entries to see what really affects how you feel."
+        path="/features/mental-wellness"
+      />
       <FitMateHeader />
       
       <main className="pt-20">
@@ -92,9 +104,9 @@ const MentalWellness = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" onClick={() => navigate("/auth")}>
+              <Button size="lg" onClick={startHere}>
                 <Brain className="w-5 h-5 mr-2" />
-                Start Wellness Journey
+                {user ? "Go to Daily Check-In" : "Start Wellness Journey"}
               </Button>
               <Button size="lg" variant="outline" onClick={() => navigate("/")}>
                 View All Features
@@ -196,8 +208,8 @@ const MentalWellness = () => {
               <p className="text-xl mb-8 text-white/90 max-w-2xl mx-auto">
                 Start your mental wellness journey today and discover the power of a balanced mind.
               </p>
-              <Button size="lg" variant="secondary" onClick={() => navigate("/auth")}>
-                Begin Wellness Program
+              <Button size="lg" variant="secondary" onClick={startHere}>
+                {ctaLabel}
               </Button>
             </div>
           </div>

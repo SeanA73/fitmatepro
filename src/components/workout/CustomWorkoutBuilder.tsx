@@ -7,9 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash2, Save, Dumbbell, Clock, Target, Lock } from 'lucide-react';
+import { Plus, Trash2, Save, Dumbbell, Pencil } from 'lucide-react';
 import { UpgradePrompt } from '@/components/subscription/UpgradePrompt';
 import { useToast } from '@/hooks/use-toast';
+import { useWorkoutPlans, readPlanFormat } from '@/hooks/useWorkoutPlans';
+import { Skeleton } from '@/components/ui/skeleton';
+import type { Json } from '@/integrations/supabase/types';
 
 interface Exercise {
   id: string;
@@ -27,14 +30,27 @@ interface WorkoutDay {
   exercises: Exercise[];
 }
 
+const emptyDays = (): WorkoutDay[] => [{ id: 'day-1', name: 'Day 1', exercises: [] }];
+
 export const CustomWorkoutBuilder = () => {
   const { hasPremiumAccess } = useSubscription();
   const { toast } = useToast();
+  const { plans, loading, savePlan, deletePlan } = useWorkoutPlans();
   const [workoutName, setWorkoutName] = useState('');
   const [workoutDescription, setWorkoutDescription] = useState('');
-  const [days, setDays] = useState<WorkoutDay[]>([
-    { id: 'day-1', name: 'Day 1', exercises: [] }
-  ]);
+  const [saving, setSaving] = useState(false);
+  const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
+  const [days, setDays] = useState<WorkoutDay[]>(emptyDays);
+
+  // Only rows this builder wrote — the Workouts page stores a different shape
+  // in the same table.
+  const savedPlans = plans.filter(plan => readPlanFormat(plan.exercises) === 'builder_days');
+
+  const readDays = (exercises: Json): WorkoutDay[] => {
+    if (!exercises || typeof exercises !== 'object' || Array.isArray(exercises)) return [];
+    const stored = (exercises as Record<string, unknown>).days;
+    return Array.isArray(stored) ? (stored as WorkoutDay[]) : [];
+  };
 
   const exerciseLibrary = [
     'Barbell Squat', 'Bench Press', 'Deadlift', 'Overhead Press',
@@ -87,7 +103,14 @@ export const CustomWorkoutBuilder = () => {
     ));
   };
 
-  const saveWorkout = () => {
+  const resetBuilder = () => {
+    setWorkoutName('');
+    setWorkoutDescription('');
+    setDays(emptyDays());
+    setEditingPlanId(null);
+  };
+
+  const saveWorkout = async () => {
     if (!workoutName.trim()) {
       toast({
         title: "Error",
@@ -97,11 +120,30 @@ export const CustomWorkoutBuilder = () => {
       return;
     }
 
-    toast({
-      title: "Workout Saved!",
-      description: `${workoutName} has been saved to your custom workouts.`
+    setSaving(true);
+    // savePlan raises its own success/error toast and refetches the list.
+    const { error } = await savePlan({
+      id: editingPlanId ?? undefined,
+      name: workoutName.trim(),
+      description: workoutDescription.trim() || null,
+      // duration_minutes and difficulty_level stay null: this builder collects
+      // neither, and estimating them would be inventing data.
+      exercises: { format: 'builder_days', days } as unknown as Json,
     });
-    // Here you would save to database
+    setSaving(false);
+
+    if (!error) resetBuilder();
+  };
+
+  const loadPlan = (planId: string) => {
+    const plan = savedPlans.find(candidate => candidate.id === planId);
+    if (!plan) return;
+
+    const storedDays = readDays(plan.exercises);
+    setEditingPlanId(plan.id);
+    setWorkoutName(plan.name);
+    setWorkoutDescription(plan.description ?? '');
+    setDays(storedDays.length > 0 ? storedDays : emptyDays());
   };
 
   if (!hasPremiumAccess()) {
@@ -279,11 +321,69 @@ export const CustomWorkoutBuilder = () => {
 
         {/* Save Button */}
         <div className="flex justify-end gap-3 pt-4 border-t">
-          <Button variant="outline">Preview</Button>
-          <Button onClick={saveWorkout} className="gap-2">
+          {editingPlanId && (
+            <Button variant="outline" onClick={resetBuilder} disabled={saving}>
+              Cancel Edit
+            </Button>
+          )}
+          <Button onClick={saveWorkout} disabled={saving} className="gap-2">
             <Save className="w-4 h-4" />
-            Save Workout
+            {saving ? 'Saving...' : editingPlanId ? 'Update Workout' : 'Save Workout'}
           </Button>
+        </div>
+
+        {/* Saved plans, read back from workout_plans */}
+        <div className="space-y-3 pt-6 border-t">
+          <Label className="text-base font-semibold">Your Saved Workouts</Label>
+
+          {loading ? (
+            <Skeleton className="h-20 w-full" />
+          ) : savedPlans.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No saved workouts yet. Build one above and save it.
+            </p>
+          ) : (
+            savedPlans.map((plan) => {
+              const planDays = readDays(plan.exercises);
+              const exerciseCount = planDays.reduce((total, day) => total + (day.exercises?.length ?? 0), 0);
+
+              return (
+                <div
+                  key={plan.id}
+                  className="flex items-start justify-between gap-4 p-4 rounded-lg border bg-card"
+                >
+                  <div className="min-w-0">
+                    <div className="font-medium truncate">{plan.name}</div>
+                    {plan.description && (
+                      <p className="text-sm text-muted-foreground truncate">{plan.description}</p>
+                    )}
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge variant="outline" className="text-xs">
+                        {planDays.length} {planDays.length === 1 ? 'day' : 'days'}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {exerciseCount} {exerciseCount === 1 ? 'exercise' : 'exercises'}
+                      </Badge>
+                      {plan.created_at && (
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(plan.created_at).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button variant="ghost" size="sm" onClick={() => loadPlan(plan.id)}>
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => deletePlan(plan.id)}>
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </CardContent>
     </Card>

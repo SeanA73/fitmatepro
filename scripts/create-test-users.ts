@@ -236,13 +236,14 @@ async function createTestUsers() {
   console.log('   Email: premium.user@test.com');
   console.log('   Password: TestUser123!');
   console.log('   Plan: Premium');
-  console.log('\nAdmin Users (both have admin access):');
+  // The admin role grants no UI — there is no admin dashboard. See scripts/README.md.
+  console.log('\nAdmin Users (admin role in user_roles; no admin UI exists):');
   console.log('   Email: admin@fitmatepro.com');
   console.log('   Password: Admin123!');
-  console.log('   Plan: Premium + Admin Access');
+  console.log('   Plan: Premium');
   console.log('\n   Email: admin@test.com (backward compatible)');
   console.log('   Password: Admin123!');
-  console.log('   Plan: Premium + Admin Access');
+  console.log('   Plan: Premium');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
   console.log('✅ Test users created successfully!');
   console.log('   You can now sign in with any of these accounts.\n');

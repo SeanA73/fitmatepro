@@ -8,26 +8,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Heart, Dumbbell, User, Mail, Lock, Calendar, Ruler, Weight, ArrowLeft, X, Zap, Target, Check, CreditCard, Shield } from "lucide-react";
+import { Heart, Dumbbell, User, Mail, Lock, Calendar, Ruler, Weight, ArrowLeft, X, Zap, Target, Check } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useSubscription } from "@/hooks/useSubscription";
-import { useToast } from "@/hooks/use-toast";
 import { validateSignUp, validateEmail } from "@/lib/validation";
+import { hasCompletedOnboarding } from "@/lib/onboarding";
+import { Seo } from "@/components/Seo";
 
 const Auth = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { signUp, signIn, loading } = useAuth();
-  const { createCheckoutSession } = useSubscription();
-  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("signin");
-  
-  // Plan selection state
+
+  // Plan selection state. Only 'free' is reachable: the Premium option is shown
+  // for information but is not selectable, because nothing can charge for it
+  // yet. billingCycle is gone with the checkout call that consumed it.
   const [selectedPlan, setSelectedPlan] = useState<'free' | 'premium'>('free');
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
-  
+
   const [signInData, setSignInData] = useState({
     email: "",
     password: "",
@@ -46,6 +44,11 @@ const Auth = () => {
   });
   const [signUpErrors, setSignUpErrors] = useState<Record<string, string>>({});
   const [signInErrors, setSignInErrors] = useState<Record<string, string>>({});
+
+  // Set to the signed-up address when the account was created but no session
+  // came back, i.e. the confirmation email is the next step. Replaces the whole
+  // form so the instruction can't be missed.
+  const [pendingConfirmationEmail, setPendingConfirmationEmail] = useState<string | null>(null);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,13 +69,12 @@ const Auth = () => {
     
     const { data, error } = await signIn(signInData.email, signInData.password);
     if (data && !error) {
-      // Check if onboarding is complete
-      const onboardingComplete = localStorage.getItem('onboarding_complete');
-      if (!onboardingComplete) {
-        navigate("/onboarding");
-      } else {
-        navigate("/");
-      }
+      // Ask the database, not just localStorage. Checking only the local flag
+      // sent every returning user on a new browser back through onboarding,
+      // because this navigate() fires before Index's own DB check can run.
+      const userId = data.user?.id;
+      const onboardingComplete = userId ? await hasCompletedOnboarding(userId) : false;
+      navigate(onboardingComplete ? "/" : "/onboarding");
     }
   };
 
@@ -101,36 +103,31 @@ const Auth = () => {
     });
     
     if (data && !error) {
-      if (selectedPlan === 'premium') {
-        // Start Stripe checkout for Premium
-        try {
-          await createCheckoutSession('premium', billingCycle === 'annual');
-          // User will be redirected to Stripe checkout
-          return;
-        } catch (error) {
-          toast({
-            title: "Error",
-            description: "Account created but failed to start premium checkout. You can upgrade later.",
-            variant: "destructive"
-          });
-        }
+      // Only a real session can get through /onboarding's ProtectedRoute.
+      //
+      // With email confirmation enabled, signUp returns a user but session:
+      // null. Navigating anyway sent the visitor straight into ProtectedRoute,
+      // which bounced them back here with no explanation — the account existed
+      // but nothing said why they'd been returned to the login page. So branch
+      // on the session rather than assuming one.
+      //
+      // (There is no checkout branch here any more either: it awaited
+      // createCheckoutSession then `return`ed, and because that call swallowed
+      // its own rejection the early return always won.)
+      if (data.session) {
+        navigate("/onboarding");
+      } else {
+        setPendingConfirmationEmail(signUpData.email.trim());
       }
-      
-      // For free plan, go to onboarding
-      navigate("/onboarding");
     }
   };
 
-  // Check URL parameters for trial signup
+  // Deep links only choose the tab now. They used to be able to pre-select the
+  // premium plan (/auth?trial=true&plan=premium), which set up a purchase the
+  // app cannot complete.
   useEffect(() => {
-    const trial = searchParams.get('trial');
-    const plan = searchParams.get('plan');
-    if (trial === 'true' || plan === 'premium') {
+    if (searchParams.get('trial') || searchParams.get('plan')) {
       setActiveTab("signup");
-      setSelectedPlan('premium');
-    } else if (plan === 'free') {
-      setActiveTab("signup");
-      setSelectedPlan('free');
     }
   }, [searchParams]);
 
@@ -152,8 +149,87 @@ const Auth = () => {
     "general_health"
   ];
 
+  // Public, but deliberately kept out of search results: a sign-in form has no
+  // search value and would compete with the pages that do. noindex still allows
+  // link following, so it does not strand the pages it links to.
+  const seo = (
+    <Seo
+      title="FitMatePro — Sign In or Create a Free Account Today"
+      description="Sign in to FitMatePro, or create a free account to start following workout programs, logging your meals and recording daily wellness check-ins."
+      path="/auth"
+      noindex
+    />
+  );
+  // Account created, but no session — the confirmation link is the next step.
+  // This replaces the form entirely rather than sitting alongside it: the
+  // previous behaviour navigated to /onboarding, got bounced back here by
+  // ProtectedRoute, and left the visitor staring at the signup form they had
+  // just submitted with no idea what had happened.
+  if (pendingConfirmationEmail) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        {seo}
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <Heart className="w-6 sm:w-8 h-6 sm:h-8 text-primary" />
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">FitMatePro</h1>
+            </div>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Mail className="w-5 h-5 text-primary" />
+                Confirm your email address
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Your account was created, but you're not signed in yet. We sent a
+                confirmation link to:
+              </p>
+
+              <p className="font-medium break-all p-3 rounded-md bg-muted text-sm">
+                {pendingConfirmationEmail}
+              </p>
+
+              <p className="text-sm text-muted-foreground">
+                Open that email and click the link to activate your account, then
+                come back and sign in. If it hasn't arrived in a few minutes,
+                check your spam folder.
+              </p>
+
+              <div className="flex flex-col gap-2 pt-2">
+                <Button
+                  variant="wellness"
+                  className="w-full"
+                  onClick={() => {
+                    setPendingConfirmationEmail(null);
+                    setActiveTab("signin");
+                  }}
+                >
+                  Back to sign in
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full flex items-center gap-2"
+                  onClick={() => navigate("/")}
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Back to FitMatePro
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      {seo}
       <div className="w-full max-w-md">
         {/* Skip/Back Navigation */}
         <div className="flex items-center justify-between mb-6">
@@ -257,7 +333,7 @@ const Auth = () => {
                     <Target className="w-5 h-5" />
                     Choose Your Plan
                   </CardTitle>
-                  <p className="text-sm text-muted-foreground">Select Free or Premium to get started</p>
+                  <p className="text-sm text-muted-foreground">Free is the only plan available right now</p>
                 </CardHeader>
                 <CardContent>
                   <RadioGroup value={selectedPlan} onValueChange={(value) => setSelectedPlan(value as 'free' | 'premium')} className="space-y-4">
@@ -298,98 +374,45 @@ const Auth = () => {
                       </div>
                     </label>
 
-                    {/* Premium Plan Option */}
-                    <label 
-                      htmlFor="plan-premium"
-                      className={`relative border-2 rounded-lg p-4 cursor-pointer transition-all block ${
-                        selectedPlan === 'premium' 
-                          ? 'border-primary bg-primary/10 shadow-md' 
-                          : 'border-muted hover:border-primary/50'
-                      }`}
-                    >
+                    {/* Premium Plan Option — informational only.
+                        Not selectable: billing is not live, so choosing it here
+                        could only ever produce a free account behind a paid
+                        promise. The billing-cycle toggle and the "7-day free
+                        trial" note are gone with it; no code implements either.
+                        "Advanced meal planning" is also gone — that feature is
+                        still a static mock. */}
+                    <div className="relative border-2 border-muted border-dashed rounded-lg p-4 block opacity-75">
                       <div className="flex items-start gap-4">
-                        <RadioGroupItem value="premium" id="plan-premium" className="mt-1" />
                         <div className="flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <Label htmlFor="plan-premium" className="text-lg font-semibold cursor-pointer flex items-center gap-2">
-                              <Zap className="w-5 h-5 text-primary" />
+                          <div className="flex items-center justify-between mb-2 gap-2">
+                            <span className="text-lg font-semibold flex items-center gap-2">
+                              <Zap className="w-5 h-5 text-muted-foreground" />
                               FitMatePro Premium
-                            </Label>
+                            </span>
+                            <Badge variant="secondary">Coming soon</Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground mb-3">Unlock everything FitMatePro has to offer</p>
-                          
-                          {/* Billing Cycle Toggle for Premium */}
-                          {selectedPlan === 'premium' && (
-                            <div className="mb-3 p-3 bg-muted rounded-md" onClick={(e) => e.stopPropagation()}>
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm font-medium">Billing Cycle</span>
-                                <div className="flex gap-2">
-                                  <Button
-                                    type="button"
-                                    variant={billingCycle === 'monthly' ? 'default' : 'outline'}
-                                    size="sm"
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      setBillingCycle('monthly');
-                                    }}
-                                  >
-                                    Monthly
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant={billingCycle === 'annual' ? 'default' : 'outline'}
-                                    size="sm"
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      setBillingCycle('annual');
-                                    }}
-                                  >
-                                    Annual <span className="ml-1 text-xs">(Save 20%)</span>
-                                  </Button>
-                                </div>
-                              </div>
-                              <div className="text-lg font-bold text-primary">
-                                ${billingCycle === 'monthly' ? '4.99' : '4.00'}/month
-                                {billingCycle === 'annual' && (
-                                  <span className="text-sm text-muted-foreground font-normal ml-2">
-                                    (${47.99}/year)
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                          
-                          <div className="space-y-1 text-sm">
+                          <p className="text-sm text-muted-foreground mb-3">
+                            Paid plans aren't available yet. Sign up free — you won't
+                            need a card, and nothing here will charge you.
+                          </p>
+
+                          <div className="space-y-1 text-sm text-muted-foreground">
                             <div className="flex items-center gap-2">
-                              <Check className="w-4 h-4 text-success" />
+                              <Check className="w-4 h-4" />
                               <span>Unlimited workout tracking</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Check className="w-4 h-4 text-success" />
-                              <span>Advanced meal planning</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Check className="w-4 h-4 text-success" />
+                              <Check className="w-4 h-4" />
                               <span>Custom workout builder</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Check className="w-4 h-4 text-success" />
-                              <span>All premium features included</span>
+                              <Check className="w-4 h-4" />
+                              <span>Health data export</span>
                             </div>
-                            {selectedPlan === 'premium' && (
-                              <div className="mt-2 pt-2 border-t border-border">
-                                <div className="flex items-center gap-2 text-xs text-primary">
-                                  <Shield className="w-3 h-3" />
-                                  <span>🎉 7-day free trial</span>
-                                </div>
-                              </div>
-                            )}
                           </div>
                         </div>
                       </div>
-                    </label>
+                    </div>
                   </RadioGroup>
                 </CardContent>
               </Card>
@@ -402,10 +425,7 @@ const Auth = () => {
                     Create Your Account
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    {selectedPlan === 'free' 
-                      ? 'Sign up for free and start your fitness journey today'
-                      : 'Create your account to start your 7-day free trial of Premium'
-                    }
+                    Sign up for free and start your fitness journey today
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -575,69 +595,16 @@ const Auth = () => {
                 </CardContent>
               </Card>
 
-              {/* Payment Information - Only for Premium */}
-              {selectedPlan === 'premium' && (
-                <Card className="border-primary/20 bg-primary/5">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <CreditCard className="w-5 h-5 text-primary" />
-                      Payment Information
-                    </CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      You'll be redirected to secure payment after creating your account. No charge during your 7-day free trial.
-                    </p>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="p-4 bg-muted rounded-lg border border-border">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium">Selected Plan</span>
-                          <Badge variant="default">Premium</Badge>
-                        </div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm text-muted-foreground">Billing Cycle</span>
-                          <span className="text-sm font-semibold capitalize">{billingCycle}</span>
-                        </div>
-                        <Separator className="my-2" />
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">Price</span>
-                          <span className="text-lg font-bold text-primary">
-                            ${billingCycle === 'monthly' ? '4.99' : '47.99'}
-                            <span className="text-sm font-normal text-muted-foreground">/{billingCycle === 'monthly' ? 'month' : 'year'}</span>
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-start gap-3 p-3 bg-success/10 border border-success/20 rounded-lg">
-                        <Shield className="w-5 h-5 text-success mt-0.5 flex-shrink-0" />
-                        <div className="text-sm">
-                          <p className="font-medium text-success mb-1">Secure Payment Process</p>
-                          <p className="text-muted-foreground">
-                            After account creation, you'll be redirected to Stripe for secure payment processing. 
-                            Your card won't be charged until after your 7-day free trial ends.
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Shield className="w-4 h-4" />
-                        <span>256-bit SSL encryption • PCI-DSS compliant • Cancel anytime</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              {/* The "Payment Information" card that used to sit here is gone.
+                  It promised a Stripe redirect, a 7-day trial, PCI-DSS handling
+                  and "Cancel anytime" — none of which exists: no edge function
+                  is deployed, so no payment was ever collected or attempted. */}
 
               {/* Submit Button */}
               <div className="space-y-3">
                 <Button type="submit" className="w-full" variant="wellness" size="lg" disabled={loading}>
                   {loading ? (
                     "Creating Account..."
-                  ) : selectedPlan === 'premium' ? (
-                    <>
-                      <Zap className="w-4 h-4 mr-2" />
-                      Create Account & Start Free Trial
-                    </>
                   ) : (
                     <>
                       <Target className="w-4 h-4 mr-2" />

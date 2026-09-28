@@ -4,8 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import FitMateHeader from "@/components/FitMateHeader";
-import { 
-  Users, 
+import { useAuth } from "@/hooks/useAuth";
+import { Seo } from '@/components/Seo';
+import {
+  Users,
   Trophy, 
   Share2, 
   MessageSquare,
@@ -20,6 +22,11 @@ import {
 
 const CommunityFeatures = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // Public marketing page. Nothing here is built yet, so a signed-in user is
+  // sent back to the dashboard rather than to the login screen.
+  const startHere = () => navigate(user ? "/" : "/auth?plan=free");
 
   const features = [
     {
@@ -64,55 +71,42 @@ const CommunityFeatures = () => {
     {
       name: "Strength Athletes",
       description: "For serious lifters and strength training enthusiasts",
-      members: "1.8K+ members",
+      members: "Active community",
       badge: "Premium"
     },
     {
       name: "Cardio Warriors",
       description: "Running, cycling, and cardio enthusiasts unite",
-      members: "3.2K+ members",
+      members: "Active community",
       badge: "Premium"
     },
     {
       name: "Elite Performance",
       description: "Advanced athletes and competitive fitness",
-      members: "950+ members",
-      badge: "Pro"
+      members: "Active community",
+      badge: "Premium"
     }
   ];
 
-  const testimonials = [
-    {
-      name: "Sarah M.",
-      role: "Community Member",
-      text: "The support I've received from the FitMatePro community has been incredible. I've made lifelong friends here!",
-      rating: 5
-    },
-    {
-      name: "Mike R.",
-      role: "Challenge Winner",
-      text: "Competing in monthly challenges keeps me motivated and pushes me to achieve goals I never thought possible.",
-      rating: 5
-    },
-    {
-      name: "Lisa K.",
-      role: "Group Leader",
-      text: "Leading group workouts has not only helped others but has also improved my own fitness journey dramatically.",
-      rating: 5
-    }
-  ];
+  const testimonials: { name: string; role: string; text: string; rating: number }[] = [];
 
+  // Free and Premium are the only tiers. There is no Pro tier.
   const getBadgeVariant = (badge: string) => {
     switch (badge) {
       case "Free": return "secondary";
       case "Premium": return "default";
-      case "Pro": return "destructive";
       default: return "secondary";
     }
   };
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title="Community — Train Alongside Other FitMatePro Members"
+        description="Share milestones, join monthly challenges, find an accountability partner and swap advice with other members working toward similar fitness goals."
+        path="/features/community-features"
+        noindex
+      />
       <FitMateHeader />
       
       <div className="max-w-7xl mx-auto px-6 py-12">
@@ -143,13 +137,13 @@ const CommunityFeatures = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" onClick={() => navigate("/auth")}>
+            <Button size="lg" onClick={startHere}>
               <UserPlus className="w-4 h-4 mr-2" />
-              Join Community
+              {user ? "Go to Dashboard" : "Create an Account"}
             </Button>
-            <Button variant="outline" size="lg" onClick={() => navigate("/features/ai-coaching")}>
+            <Button variant="outline" size="lg" onClick={() => navigate("/chat")}>
               <Zap className="w-4 h-4 mr-2" />
-              Try AI Coaching
+              Try Coaching
             </Button>
           </div>
         </div>
@@ -273,10 +267,10 @@ const CommunityFeatures = () => {
               <Button 
                 size="lg" 
                 variant="secondary"
-                onClick={() => navigate("/auth")}
+                onClick={startHere}
                 className="bg-white text-primary hover:bg-white/90"
               >
-                Join the FitMatePro Community
+                {user ? "Go to Dashboard" : "Create an Account"}
               </Button>
             </CardContent>
           </Card>

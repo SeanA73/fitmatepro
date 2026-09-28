@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/EmptyState";
+import { useHasProducts } from "@/hooks/useHasProducts";
 
 interface PersonalizedRecommendationsProps {
   context?: string;
@@ -40,6 +41,7 @@ export const PersonalizedRecommendations = ({
   } = useProductRecommendations({ context, limit, autoGenerate });
   
   const { toast } = useToast();
+  const { hasProducts } = useHasProducts();
   const [feedbackOpen, setFeedbackOpen] = useState<string | null>(null);
 
   const handleProductClick = async (recommendation: ProductRecommendation) => {
@@ -103,6 +105,9 @@ export const PersonalizedRecommendations = ({
   }
 
   if (recommendations.length === 0 && !generating) {
+    // Recommendations are drawn from affiliate_products. With an empty
+    // catalogue there is nothing to recommend, so don't offer a Generate
+    // button that cannot succeed.
     return (
       <div className="space-y-4">
         {showHeader && (
@@ -111,37 +116,34 @@ export const PersonalizedRecommendations = ({
               <Sparkles className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-semibold">{title}</h3>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => generateRecommendations(true)}
-              disabled={generating}
-            >
-              {generating ? (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Generate Recommendations
-                </>
-              )}
-            </Button>
+            {hasProducts && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => generateRecommendations(true)}
+                disabled={generating}
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Generate Recommendations
+              </Button>
+            )}
           </div>
         )}
-        <EmptyState
-          icon={ShoppingBag}
-          title="No recommendations yet"
-          description="Generate personalized product recommendations based on your workout history and goals."
-          actionLabel={generating ? "Generating..." : "Get Recommendations"}
-          onAction={() => generateRecommendations(true)}
-        >
-          {generating && (
-            <RefreshCw className="w-4 h-4 mr-2 animate-spin inline" />
-          )}
-        </EmptyState>
+        {hasProducts ? (
+          <EmptyState
+            icon={ShoppingBag}
+            title="No recommendations yet"
+            description="Generate personalized product recommendations based on your workout history and goals."
+            actionLabel="Get Recommendations"
+            onAction={() => generateRecommendations(true)}
+          />
+        ) : (
+          <EmptyState
+            icon={ShoppingBag}
+            title="No products available"
+            description="The product catalogue is empty, so there's nothing to recommend yet."
+          />
+        )}
       </div>
     );
   }

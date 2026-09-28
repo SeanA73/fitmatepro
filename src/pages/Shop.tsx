@@ -10,6 +10,7 @@ import { ArrowLeft, Search, Filter, Star, ShoppingCart, ExternalLink, TrendingUp
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { AIProductRecommendations } from "@/components/AIProductRecommendations";
+import FitMateHeader from "@/components/FitMateHeader";
 
 interface Product {
   id: string;
@@ -135,7 +136,8 @@ const Shop = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
+      <FitMateHeader />
+      {/* Page context bar */}
       <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center gap-4">
@@ -147,9 +149,8 @@ const Shop = () => {
               <h1 className="text-2xl font-bold">Fitness Shop</h1>
               <p className="text-sm text-muted-foreground">Premium gear for your fitness journey</p>
             </div>
-            <Button variant="outline" size="icon">
-              <ShoppingCart className="w-5 h-5" />
-            </Button>
+            {/* The cart icon here had no handler and there is no cart — this is
+                an affiliate catalogue that hands off to external stores. */}
           </div>
         </div>
       </div>
@@ -338,11 +339,25 @@ const Shop = () => {
           </div>
         )}
 
+        {/* Distinguish "your filter matched nothing" from "the catalogue is
+            empty" — telling someone to adjust filters when there are no
+            products at all just sends them in circles. */}
         {!loading && filteredProducts.length === 0 && (
           <div className="text-center py-12">
             <ShoppingCart className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No products found</h3>
-            <p className="text-muted-foreground">Try adjusting your search or filters</p>
+            {products.length === 0 ? (
+              <>
+                <h3 className="text-lg font-semibold mb-2">The shop isn't stocked yet</h3>
+                <p className="text-muted-foreground">
+                  No products have been added. Check back later.
+                </p>
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-semibold mb-2">No products found</h3>
+                <p className="text-muted-foreground">Try adjusting your search or filters</p>
+              </>
+            )}
           </div>
         )}
       </div>

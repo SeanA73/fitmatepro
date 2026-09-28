@@ -10,14 +10,13 @@ import {
   Play, 
   Calendar, 
   Clock, 
-  Target, 
-  Users, 
-  Star, 
-  CheckCircle,
+  Target,
+  Users,
   Dumbbell,
   TrendingUp
 } from "lucide-react";
-import { preBuiltPrograms } from "@/data/workoutPrograms";
+import { preBuiltPrograms, workoutDayMinutes } from "@/data/workoutPrograms";
+import FitMateHeader from "@/components/FitMateHeader";
 
 const ProgramDetails = () => {
   const { id } = useParams();
@@ -28,12 +27,15 @@ const ProgramDetails = () => {
   
   if (!program) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Program Not Found</h2>
-          <Button onClick={() => navigate("/workouts")}>
-            Back to Workouts
-          </Button>
+      <div className="min-h-screen bg-background">
+        <FitMateHeader />
+        <div className="flex items-center justify-center py-24">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">Program Not Found</h2>
+            <Button onClick={() => navigate("/workouts")}>
+              Back to Workouts
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -45,7 +47,8 @@ const ProgramDetails = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
+      <FitMateHeader />
+      {/* Page context bar */}
       <div className="border-b border-border bg-card/50 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex items-center gap-4">
@@ -86,7 +89,8 @@ const ProgramDetails = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                {/* No rating or user count: nothing measures either. */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-primary">{program.duration_weeks}</div>
                     <div className="text-sm text-muted-foreground">Weeks</div>
@@ -96,12 +100,8 @@ const ProgramDetails = () => {
                     <div className="text-sm text-muted-foreground">Days/Week</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-wellness">{program.rating}</div>
-                    <div className="text-sm text-muted-foreground">Rating</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-motivation">{program.participants.toLocaleString()}</div>
-                    <div className="text-sm text-muted-foreground">Users</div>
+                    <div className="text-2xl font-bold text-wellness">{program.workout_days.length}</div>
+                    <div className="text-sm text-muted-foreground">Workout Days</div>
                   </div>
                 </div>
 
@@ -163,9 +163,9 @@ const ProgramDetails = () => {
                                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                   <div className="flex items-center gap-1">
                                     <Clock className="w-3 h-3" />
-                                    {day.estimated_duration} min
+                                    {workoutDayMinutes(day)} min
                                   </div>
-                                  <div>{day.calories_burned} cal</div>
+                                  <div>{day.exercises.length} exercises</div>
                                 </div>
                               </div>
                             </div>
@@ -253,37 +253,8 @@ const ProgramDetails = () => {
               </CardContent>
             </Card>
 
-            {/* Quick Stats */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Program Stats</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Star className="w-4 h-4 text-yellow-500" />
-                    <span className="text-sm">Rating</span>
-                  </div>
-                  <span className="font-semibold">{program.rating}/5</span>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">Participants</span>
-                  </div>
-                  <span className="font-semibold">{program.participants.toLocaleString()}</span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-success" />
-                    <span className="text-sm">Completion Rate</span>
-                  </div>
-                  <span className="font-semibold">87%</span>
-                </div>
-              </CardContent>
-            </Card>
+            {/* The old "Program Stats" card is gone: its rating, participant
+                count and 87% completion rate were all hardcoded. */}
 
             {/* Creator Info */}
             <Card>
@@ -296,7 +267,6 @@ const ProgramDetails = () => {
                     <Users className="w-8 h-8 text-primary" />
                   </div>
                   <h4 className="font-semibold">{program.created_by}</h4>
-                  <p className="text-sm text-muted-foreground">Certified Trainer</p>
                 </div>
               </CardContent>
             </Card>

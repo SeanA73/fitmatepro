@@ -180,33 +180,44 @@ export const useSubscription = () => {
     }
   };
 
-  // Create Stripe checkout session
+  // Create Stripe checkout session.
+  //
+  // This rejects on failure rather than swallowing the error. It used to catch
+  // its own rejection and toast "Please try again", which made the promise
+  // resolve — so Auth's `await createCheckoutSession(); return;` looked like a
+  // successful redirect, created the account, and stranded the user on /auth
+  // with no navigation. Every caller already has its own catch, so the honest
+  // failure surfaces exactly once and the caller can stop.
+  //
+  // No edge function is deployed to this project yet, so in practice this
+  // always rejects with a 404. The UI purchase path is disabled accordingly;
+  // this stays wired so it works the moment the function and real Stripe price
+  // IDs ship.
   const createCheckoutSession = async (planType: 'premium', isAnnual: boolean = false) => {
-    try {
-      const priceMap = {
-        'premium-monthly': 'price_premium_monthly',
-        'premium-annual': 'price_premium_annual'
-      };
+    const priceMap = {
+      'premium-monthly': 'price_premium_monthly',
+      'premium-annual': 'price_premium_annual'
+    };
 
-      const priceKey = `${planType}-${isAnnual ? 'annual' : 'monthly'}` as keyof typeof priceMap;
-      const priceId = priceMap[priceKey];
+    const priceKey = `${planType}-${isAnnual ? 'annual' : 'monthly'}` as keyof typeof priceMap;
+    const priceId = priceMap[priceKey];
 
-      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
-        body: { priceId, userId: user?.id }
-      });
+    const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+      body: { priceId, userId: user?.id }
+    });
 
-      if (error) throw error;
-
-      if (data?.url) {
-        window.location.href = data.url;
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to start checkout process. Please try again.",
-        variant: "destructive"
-      });
+    if (error) {
+      console.error('[billing] create-checkout-session invocation failed:', error);
+      throw new Error(
+        `Checkout is unavailable (${error.message || 'endpoint not reachable'}). No payment was started.`
+      );
     }
+
+    if (!data?.url) {
+      throw new Error('Checkout session came back without a redirect URL. No payment was started.');
+    }
+
+    window.location.href = data.url;
   };
 
   const cancelSubscription = async () => {
@@ -247,14 +258,33 @@ export const useSubscription = () => {
     return plan === 'premium';
   };
 
+  // The same race as useAuth's, one layer up. This used to call
+  // setLoading(false) synchronously alongside two un-awaited fetches, so
+  // PremiumRoute dropped its spinner while `subscription` was still null and
+  // flashed the upgrade wall at paying customers. Await the fetches, and clear
+  // loading in a finally so a failed fetch can't strand the spinner.
   useEffect(() => {
-    if (user) {
-      fetchSubscription();
-      fetchUsageLimits();
+    if (!user) {
+      setSubscription(null);
       setLoading(false);
-    } else {
-      setLoading(false);
+      return;
     }
+
+    // Re-raised on every user change: after a sign-out/sign-in the previous
+    // user's `false` would otherwise still be in state during the refetch.
+    setLoading(true);
+
+    let active = true;
+    (async () => {
+      try {
+        await fetchSubscription();
+        await fetchUsageLimits();
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+
+    return () => { active = false; };
   }, [user, profile]);
 
   return {

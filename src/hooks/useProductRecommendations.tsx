@@ -204,7 +204,7 @@ export const useProductRecommendations = (
     }
   }, []);
 
-  // Generate AI-powered recommendations
+  // Generate recommendations
   const generateRecommendations = useCallback(async (forceRegenerate = false) => {
     if (!user?.id) return;
 
@@ -472,7 +472,7 @@ async function generateAIRecommendations(
   }
 }
 
-// AI-powered recommendation logic
+// Recommendation logic
 async function generateRecommendationsWithAI(
   userId: string,
   products: any[],
@@ -667,9 +667,6 @@ function generateRecommendationReason(
     }
   }
 
-  if (product.rating && product.rating >= 4.5) {
-    reasons.push("highly rated by users");
-  }
 
   if (reasons.length === 0) {
     return "A great addition to your fitness journey";

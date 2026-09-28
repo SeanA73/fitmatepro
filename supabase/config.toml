@@ -1,8 +1,55 @@
 project_id = "atfdumpulvyhwcptybrt"
 
+# ############################################################################
+# DO NOT RUN `supabase config push` AGAINST THIS FILE.
+#
+# This [auth] block is deliberately incomplete: it declares only site_url and
+# additional_redirect_urls. `config push` sends the WHOLE auth config, not a
+# diff, so every key omitted here is pushed as the CLI's local-dev default and
+# silently overwrites the remote project. A push attempted on 2026-08-17 would
+# have applied, among others:
+#
+#   enable_confirmations  true -> false  (signup with no email verification)
+#   mfa.totp.*            enrol/verify enabled -> disabled
+#   otp_length            8 -> 6
+#   max_frequency         1m -> 1s       (email rate limit effectively removed)
+#
+# All four are security downgrades and none of them are reported as changes you
+# opted into. These two URL values were set through the dashboard instead.
+#
+# Before anyone re-enables pushing: mirror EVERY auth setting from the remote
+# project into this block first, then diff the push output against the remote
+# values before confirming. The CLI has no `config pull` (v2.114.0 ships only
+# `config push`), so read the remote side from Dashboard -> Authentication or
+# GET /v1/projects/{ref}/config/auth on the Management API.
+# ############################################################################
+
+# site_url is where real users land, so confirmation and recovery links have to
+# point at production. useAuth.signUp() passes emailRedirectTo =
+# `${window.location.origin}/`, which is http://localhost:8080/ during dev (see
+# vite.config.ts server.port); GoTrue silently rewrites any redirect that is not
+# in the allow list back to site_url, so localhost is listed here to keep the dev
+# signup flow working. additional_redirect_urls is the CLI's name for the
+# URI_ALLOW_LIST / "Redirect URLs" setting in the dashboard.
+[auth]
+site_url = "https://fitmatepro.com"
+additional_redirect_urls = [
+  "https://fitmatepro.com/**",
+  "http://localhost:8080/**",
+]
+
 # Stripe signs webhook requests with its own signature scheme and cannot present
 # a Supabase JWT. With verify_jwt left at its default of true, Supabase rejects
 # the request with 401 before stripe-webhook/index.ts ever runs
 # stripe.webhooks.constructEvent(), so no purchase becomes an entitlement.
 [functions.stripe-webhook]
 verify_jwt = false
+
+# Stated explicitly even though true is the default. delete-account destroys an
+# account, so the platform must reject anything without a valid JWT before the
+# function body runs — and nobody should be able to make this endpoint
+# unauthenticated by changing a global default without touching this line.
+# The function derives the user id from that JWT and never reads the request
+# body, so there is no user id parameter to forge.
+[functions.delete-account]
+verify_jwt = true

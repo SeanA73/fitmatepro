@@ -1,10 +1,12 @@
 import { ReactNode } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { UpgradePrompt } from '@/components/subscription/UpgradePrompt';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Lock, Crown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import FitMateHeader from '@/components/FitMateHeader';
+import { Lock, ArrowLeft } from 'lucide-react';
 
 interface PremiumRouteProps {
   children: ReactNode;
@@ -14,6 +16,7 @@ interface PremiumRouteProps {
 export const PremiumRoute = ({ children, showUpgrade = true }: PremiumRouteProps) => {
   const { user, loading: authLoading } = useAuth();
   const { hasPremiumAccess, loading: subLoading } = useSubscription();
+  const navigate = useNavigate();
 
   if (authLoading || subLoading) {
     return (
@@ -30,8 +33,17 @@ export const PremiumRoute = ({ children, showUpgrade = true }: PremiumRouteProps
   if (!hasPremiumAccess()) {
     if (showUpgrade) {
       return (
-        <div className="min-h-screen bg-background p-6">
-          <div className="max-w-2xl mx-auto mt-12">
+        // The upgrade panel renders inline now. It used to be a fixed
+        // full-screen overlay with no close handler, which covered this card
+        // and left the browser back button as the only way out.
+        <div className="min-h-screen bg-background">
+          <FitMateHeader />
+          <div className="max-w-2xl mx-auto px-6 py-12">
+            <Button variant="ghost" className="mb-6" onClick={() => navigate(-1)}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Go back
+            </Button>
+
             <Card className="border-2 border-primary/20">
               <CardHeader className="text-center">
                 <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
@@ -42,11 +54,14 @@ export const PremiumRoute = ({ children, showUpgrade = true }: PremiumRouteProps
                   This feature is available with FitMatePro Premium
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <UpgradePrompt
                   trigger="premium_feature_access"
                   featureName="premium_feature"
                 />
+                <Button variant="outline" className="w-full" onClick={() => navigate('/pricing')}>
+                  Compare plans
+                </Button>
               </CardContent>
             </Card>
           </div>
@@ -58,8 +73,3 @@ export const PremiumRoute = ({ children, showUpgrade = true }: PremiumRouteProps
 
   return <>{children}</>;
 };
-
-
-
-
-

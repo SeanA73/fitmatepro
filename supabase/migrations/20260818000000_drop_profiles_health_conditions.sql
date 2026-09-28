@@ -1,0 +1,41 @@
+-- =============================================================================
+-- Drop profiles.health_conditions
+-- =============================================================================
+-- Data minimisation. health_conditions stored a per-user array drawn from a
+-- fixed checkbox list in src/pages/Profile.tsx:
+--
+--   diabetes, hypertension, heart_disease, arthritis, asthma, back_problems,
+--   knee_problems, other
+--
+-- That is a record of diagnosed medical conditions, which is "health
+-- information" and therefore "sensitive information" under the Privacy Act 1988
+-- (Cth) — the highest protection category, requiring consent to collect and
+-- limiting use and disclosure. Being a controlled vocabulary rather than free
+-- text makes the exposure worse, not better: every value is unambiguous and
+-- machine-readable, so a breach yields a clean list of users with heart disease
+-- rather than prose someone would have to interpret.
+--
+-- An audit of src/ before writing this migration found the column was WRITTEN
+-- (profile creation, signup, and the Profile form) but never READ by any
+-- feature. Its only read paths were loading the checkboxes back into the same
+-- form that set them, and the profiles.select('*') in
+-- components/export/HealthDataExport.tsx. No workout program filtered on it, no
+-- exercise was contraindicated by it, no recommendation consulted it, and
+-- nothing warned a user about it. The app collected the highest-risk data in
+-- the schema and did nothing with it.
+--
+-- The corresponding UI, TypeScript interfaces and write sites are removed in the
+-- same change, so nothing re-populates the column.
+--
+-- IRREVERSIBLE: this destroys the stored values. There is deliberately no down
+-- migration — recreating an empty column would not restore the data, and
+-- restoring the data would defeat the purpose. Take a backup first if you need
+-- one for your own records.
+--
+-- The column-level GRANT UPDATE (health_conditions) from
+-- 20260812000000_initial_schema.sql is dropped automatically with the column;
+-- Postgres discards column privileges when the column goes.
+-- =============================================================================
+
+ALTER TABLE public.profiles
+    DROP COLUMN IF EXISTS health_conditions;

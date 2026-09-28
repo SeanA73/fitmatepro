@@ -32,13 +32,15 @@ After running the script, you can sign in with:
 |-----------|-------|----------|--------|
 | **Free** | `free.user@test.com` | `TestUser123!` | Free plan features |
 | **Premium** | `premium.user@test.com` | `TestUser123!` | All premium features |
-| **Admin** | `admin@fitmatepro.com` | `Admin123!` | Premium + Admin Dashboard |
+| **Admin** | `admin@fitmatepro.com` | `Admin123!` | Premium, plus an `admin` row in `user_roles` |
 
-## Admin Dashboard
+## About the admin role
 
-- **URL**: Navigate to `/admin` or click "Admin Dashboard" in user menu (only visible for admins)
-- **Access**: Only users with `admin` role can access
-- **Features**: User management, subscription overview, usage stats, revenue analytics
+The script writes an `admin` row to `user_roles`, but **there is no admin UI**.
+The only thing the role changes is the plan badge on the Profile page, which
+reads `ADMIN` instead of `PREMIUM`. There is no `/admin` route, and the admin
+RLS policies a dashboard would need are not in the applied schema. Treat this
+account as a premium account for testing purposes.
 
 ## Troubleshooting
 
@@ -52,10 +54,9 @@ After running the script, you can sign in with:
 - Check Supabase project is active
 - Ensure you're using service_role key, not anon key
 
-**Can't access admin dashboard**
-- Make sure you signed in with an admin account
+**Profile badge doesn't say ADMIN**
 - Check that the `has_role` function exists in your database
-- Verify the user has `admin` role in `user_roles` table
+- Verify the user has an `admin` row in the `user_roles` table
 
 
 

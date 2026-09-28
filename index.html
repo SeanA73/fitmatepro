@@ -3,19 +3,45 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!--
+      Everything below carrying data-rh="true" is a FALLBACK, owned by
+      src/components/Seo.tsx at runtime.
+
+      react-helmet-async identifies the tags it manages by the data-rh
+      attribute (HELMET_ATTRIBUTE in its source: it calls
+      head.querySelectorAll(`meta[data-rh]`) and removes what it finds before
+      inserting its own). Marking these tags therefore makes Helmet REPLACE
+      them on mount rather than appending a second, conflicting copy — without
+      the attribute every page would end up with two <meta name="description">
+      and two og:url, one of them always claiming to be the homepage.
+
+      They are kept rather than deleted because they are all a non-JavaScript
+      crawler ever sees. Googlebot renders JS and gets the per-route values;
+      facebookexternalhit and Twitterbot do not, so until prerendering ships
+      these homepage-level values are what appears in a social preview for any
+      shared URL. Prerendering is what makes social previews per-page.
+
+      <title> needs no attribute: Helmet sets document.title, updating the
+      existing element in place.
+    -->
     <title>FitMatePro - Your Personal Health & Wellness Coach</title>
-    <meta name="description" content="Meet FitMatePro, your warm and encouraging personal wellness coach. Get personalized workout plans, nutrition tracking, mental wellness support, and achieve your health goals with AI-powered guidance." />
+    <meta data-rh="true" name="description" content="FitMatePro is a personal health and wellness tracker. Follow workout programs, log your meals and macros, record daily mood, energy and sleep check-ins, and see your progress over time." />
+    <link data-rh="true" rel="canonical" href="https://fitmatepro.com/" />
+
+    <!-- Not Helmet-managed, so deliberately unmarked: Seo.tsx never emits it,
+         and a data-rh attribute here would get it stripped on first render. -->
     <meta name="author" content="FitMatePro" />
 
-    <meta property="og:title" content="FitMatePro - Your Personal Health & Wellness Coach" />
-    <meta property="og:description" content="Meet FitMatePro, your warm and encouraging personal wellness coach. Get personalized workout plans, nutrition tracking, mental wellness support, and achieve your health goals with AI-powered guidance." />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://fitmatepro.com" />
-    <meta property="og:site_name" content="FitMatePro" />
-    <meta property="og:image" content="https://fitmatepro.com/og-image.jpg" />
+    <meta data-rh="true" property="og:title" content="FitMatePro - Your Personal Health & Wellness Coach" />
+    <meta data-rh="true" property="og:description" content="FitMatePro is a personal health and wellness tracker. Follow workout programs, log your meals and macros, record daily mood, energy and sleep check-ins, and see your progress over time." />
+    <meta data-rh="true" property="og:type" content="website" />
+    <meta data-rh="true" property="og:url" content="https://fitmatepro.com/" />
+    <meta data-rh="true" property="og:site_name" content="FitMatePro" />
+    <meta data-rh="true" property="og:image" content="https://fitmatepro.com/og-image.jpg" />
 
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="https://fitmatepro.com/og-image.jpg" />
+    <meta data-rh="true" name="twitter:card" content="summary_large_image" />
+    <meta data-rh="true" name="twitter:image" content="https://fitmatepro.com/og-image.jpg" />
   </head>
 
   <body>

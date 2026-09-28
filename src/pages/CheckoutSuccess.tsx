@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, Sparkles, Loader2 } from 'lucide-react';
+import { CheckCircle2, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import FitMateHeader from '@/components/FitMateHeader';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
+// Auth gating lives on the route in src/App.tsx, not in here.
 
 const CheckoutSuccess = () => {
   const [searchParams] = useSearchParams();
@@ -16,9 +16,9 @@ const CheckoutSuccess = () => {
   const [loading, setLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
 
-  useEffect(() => {
-    const sessionId = searchParams.get('session_id');
+  const sessionId = searchParams.get('session_id');
 
+  useEffect(() => {
     if (sessionId && user) {
       // Poll for subscription — the webhook may take a few seconds to process
       const maxRetries = 10;
@@ -46,7 +46,8 @@ const CheckoutSuccess = () => {
     } else {
       setLoading(false);
     }
-  }, [searchParams, user, fetchSubscription]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, user]);
 
   useEffect(() => {
     if (subscription && retryCount > 0) {
@@ -62,22 +63,51 @@ const CheckoutSuccess = () => {
 
   if (loading) {
     return (
-      <ProtectedRoute>
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Landed here without a checkout session at all.
+  if (!sessionId) {
+    return (
+      <div className="min-h-screen bg-background">
+        <FitMateHeader />
+        <div className="max-w-2xl mx-auto px-6 py-12">
+          <Card className="border-2">
+            <CardHeader className="text-center">
+              <div className="mx-auto w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-6">
+                <AlertCircle className="w-12 h-12 text-muted-foreground" />
+              </div>
+              <CardTitle className="text-2xl">No checkout session found</CardTitle>
+              <CardDescription className="text-base mt-2">
+                This page confirms a completed checkout. There's no checkout to confirm here.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-3">
+                <Button onClick={() => navigate('/')} className="flex-1" size="lg">
+                  Go to Dashboard
+                </Button>
+                <Button onClick={() => navigate('/premium')} variant="outline" className="flex-1" size="lg">
+                  View Premium
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </ProtectedRoute>
+      </div>
     );
   }
 
   const hasSubscription = subscription && ['active', 'trialing'].includes(subscription.status);
 
   return (
-    <ProtectedRoute>
       <div className="min-h-screen bg-background">
         <FitMateHeader />
         <div className="max-w-2xl mx-auto px-6 py-12">
-          <Card className="border-2 border-primary/20">
+          <Card className="border-2">
             <CardHeader className="text-center">
               {hasSubscription ? (
                 <>
@@ -122,7 +152,7 @@ const CheckoutSuccess = () => {
                   Go to Dashboard
                 </Button>
                 <Button onClick={() => navigate('/premium')} variant="outline" className="flex-1" size="lg">
-                  Explore Premium Features
+                  View Premium
                 </Button>
               </div>
 
@@ -135,13 +165,8 @@ const CheckoutSuccess = () => {
           </Card>
         </div>
       </div>
-    </ProtectedRoute>
   );
 };
 
 export default CheckoutSuccess;
-
-
-
-
 

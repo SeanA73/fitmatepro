@@ -46,14 +46,14 @@ The script creates the following test users:
 ### 3. Admin User (Primary)
 - **Email**: `admin@fitmatepro.com`
 - **Password**: `Admin123!`
-- **Plan**: Premium + Admin Access
-- **Access**: All features + Admin Dashboard
+- **Plan**: Premium, plus an `admin` row in `user_roles`
+- **Access**: All premium features (see "The admin role" below)
 
 ### 4. Admin User (Backward Compatible)
 - **Email**: `admin@test.com`
 - **Password**: `Admin123!`
-- **Plan**: Premium + Admin Access
-- **Access**: All features + Admin Dashboard
+- **Plan**: Premium, plus an `admin` row in `user_roles`
+- **Access**: All premium features (see "The admin role" below)
 
 ## What the Script Does
 
@@ -64,9 +64,13 @@ The script creates the following test users:
 5. Creates user preferences
 6. Skips users that already exist (won't duplicate)
 
-## Admin Dashboard Access
+## The admin role
 
-Admin users can access the admin dashboard at `/admin` route. The system uses role-based access control to verify admin permissions.
+The `admin` role grants no additional UI. There is no admin dashboard and no
+`/admin` route — the pages that served one were deleted because the RLS policies
+they needed (`profiles`, `subscriptions`, `revenue_events` and `usage_tracking`
+are all self-row-only) are not in the applied schema. The role's only visible
+effect is the Profile page plan badge, which reads `ADMIN`.
 
 ## Troubleshooting
 

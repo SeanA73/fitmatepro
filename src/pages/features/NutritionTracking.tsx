@@ -5,9 +5,16 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Apple, Camera, Search, BarChart3, Clock, Heart } from "lucide-react";
 import FitMateHeader from "@/components/FitMateHeader";
+import { useAuth } from "@/hooks/useAuth";
+import { Seo } from '@/components/Seo';
 
 const NutritionTracking = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // Public marketing page: signed-in users go to the feature, not to sign-up.
+  const startHere = () => navigate(user ? "/nutrition" : "/auth?plan=free");
+  const ctaLabel = user ? "Open Nutrition Log" : "Begin Your Journey";
 
   const features = [
     {
@@ -41,6 +48,11 @@ const NutritionTracking = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title="Nutrition Tracking — Log Meals, Calories and Macros"
+        description="Log what you eat and watch calories, protein, carbs and fat add up against your daily goals, with a searchable food database and daily nutrition totals."
+        path="/features/nutrition-tracking"
+      />
       <FitMateHeader />
       
       <main className="pt-20">
@@ -72,9 +84,9 @@ const NutritionTracking = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" onClick={() => navigate("/auth")}>
+              <Button size="lg" onClick={startHere}>
                 <Apple className="w-5 h-5 mr-2" />
-                Start Tracking Nutrition
+                {user ? "Open Nutrition Log" : "Start Tracking Nutrition"}
               </Button>
               <Button size="lg" variant="outline" onClick={() => navigate("/")}>
                 View All Features
@@ -154,8 +166,8 @@ const NutritionTracking = () => {
               <p className="text-xl mb-8 text-white/90 max-w-2xl mx-auto">
                 Start tracking your meals and discover how proper nutrition can transform your health.
               </p>
-              <Button size="lg" variant="secondary" onClick={() => navigate("/auth")}>
-                Begin Your Journey
+              <Button size="lg" variant="secondary" onClick={startHere}>
+                {ctaLabel}
               </Button>
             </div>
           </div>

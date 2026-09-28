@@ -1,4 +1,6 @@
-// UNREFERENCED: consumed only by AdminDashboard, whose /admin route is disabled pending admin RLS policies (see src/App.tsx).
+// Consumed only by src/pages/Profile.tsx, and only to label the plan badge
+// "ADMIN". There is no admin UI (see src/App.tsx). isAdmin must never gate an
+// entitlement — premium access comes from getCurrentPlan()/hasPremiumAccess().
 import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';

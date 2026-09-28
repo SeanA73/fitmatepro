@@ -19,15 +19,13 @@ import {
   Palette,
   ChefHat,
   Award,
-  Shield,
-  BarChart3,
-  MousePointerClick,
   DollarSign,
   Info,
   PlayCircle,
   Clock
 } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Seo } from '@/components/Seo';
 
 const Guide = () => {
   const features = [
@@ -54,23 +52,9 @@ const Guide = () => {
         "Simple meal logging for free users",
         "Search extensive food database",
         "Track calories and macros (protein, carbs, fat)",
-        "Premium: AI-powered meal planning",
+        "Premium: Automated meal planning",
         "Premium: Weekly meal plans with shopping lists",
         "View daily nutrition summaries and trends"
-      ]
-    },
-    {
-      icon: MessageSquare,
-      title: "AI Coaching",
-      badge: "Free & Premium",
-      description: "Get personalized coaching advice",
-      details: [
-        "Chat with AI coach for fitness guidance",
-        "Free users: 3 coaching interactions per day",
-        "Premium users: Unlimited AI coaching",
-        "Get workout recommendations",
-        "Receive nutrition advice",
-        "Ask questions about form, recovery, and goals"
       ]
     },
     {
@@ -93,7 +77,6 @@ const Guide = () => {
       badge: "Premium",
       description: "Detailed insights into your journey",
       details: [
-        "Weekly progress reports",
         "Track weight, body measurements, and fitness metrics",
         "View workout volume and consistency",
         "Monitor nutrition adherence",
@@ -134,19 +117,15 @@ const Guide = () => {
   const faqs = [
     {
       question: "How do I upgrade to Premium?",
-      answer: "Click the Crown icon in the header or navigate to your Profile page. You'll see subscription options with detailed feature comparisons. Premium unlocks unlimited workouts, AI coaching, advanced meal planning, and detailed analytics."
+      answer: "Open the menu under your avatar in the header and choose \"Premium Features\" (the crown icon). That page lists what Premium includes and has an Upgrade button that takes you to Pricing, where you can compare plans and start checkout."
     },
     {
       question: "Can I cancel my subscription anytime?",
-      answer: "Yes! You can cancel your Premium subscription at any time from your Profile page. You'll retain access until the end of your billing period."
+      answer: "Yes. Go to Profile > Subscription and use \"Cancel Subscription\". You'll retain access until the end of your billing period."
     },
     {
       question: "How do I track a workout?",
       answer: "Go to Workouts > Start a Workout. Choose a pre-built program or create your own. During the workout, log each set by entering weight and reps. Complete the workout to save it to your history."
-    },
-    {
-      question: "How accurate is the AI coach?",
-      answer: "Our AI coach provides evidence-based fitness guidance. However, it's not a replacement for professional medical advice. Always consult with healthcare professionals for medical concerns."
     },
     {
       question: "How do I log meals?",
@@ -154,11 +133,11 @@ const Guide = () => {
     },
     {
       question: "What are the usage limits for free users?",
-      answer: "Free users can track 3 workouts per week and have 3 AI coaching interactions per day. Simple meal logging is unlimited. Upgrade to Premium for unlimited access to all features."
+      answer: "Free users can track 3 workouts per week and have 3 coaching interactions per day. Simple meal logging is unlimited. Upgrade to Premium for unlimited access to all features."
     },
     {
       question: "How do I export my data?",
-      answer: "Premium users can export all health data from the Profile page. Choose from PDF, CSV, or JSON formats to download your complete fitness history."
+      answer: "Premium users can export their health data from the Premium Features page (avatar menu > Premium Features). Choose from PDF, CSV, or JSON formats to download your fitness history."
     },
     {
       question: "Can I use the app offline?",
@@ -171,14 +150,6 @@ const Guide = () => {
     {
       question: "Are the product recommendations personalized?",
       answer: "Yes! Product recommendations are contextual based on your activities. For example, after logging strength workouts, you'll see equipment recommendations. After tracking meals, you'll see nutrition products. This ensures the suggestions are relevant to your current fitness focus."
-    },
-    {
-      question: "How do I access the admin dashboard?",
-      answer: "The admin dashboard is only accessible to users with administrator privileges. If you're an admin, you'll see an 'Admin' link in the navigation menu. The dashboard provides insights into user engagement, subscription metrics, and affiliate performance."
-    },
-    {
-      question: "How does the role system work?",
-      answer: "FitMatePro uses a secure role-based access system. Regular users have standard access, while administrators can view analytics and manage the platform. Roles are stored securely in the database and verified server-side to prevent unauthorized access."
     }
   ];
 
@@ -205,18 +176,23 @@ const Guide = () => {
     },
     {
       step: 5,
-      title: "Chat with Your AI Coach",
-      description: "Ask questions, get workout tips, or request personalized advice from your AI fitness coach."
+      title: "Chat with Your Coach",
+      description: "Ask questions, get workout tips, or request personalized advice from your coach."
     },
     {
       step: 6,
       title: "Consider Premium",
-      description: "If you love the app, upgrade to Premium for unlimited workouts, AI coaching, and advanced meal planning."
+      description: "If you love the app, upgrade to Premium for unlimited workouts, coaching, and advanced meal planning."
     }
   ];
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title="FitMatePro Guide — How to Track Workouts and Meals"
+        description="A walkthrough of every feature: browsing workout programs, building custom plans, logging meals and macros, and what Free and Premium each include."
+        path="/guide"
+      />
       <FitMateHeader />
       
       {/* Hero Header */}
@@ -247,7 +223,7 @@ const Guide = () => {
               </Badge>
               <Badge variant="secondary" className="text-sm px-4 py-2">
                 <MessageSquare className="w-4 h-4 mr-2" />
-                AI Coaching
+                Coaching
               </Badge>
               <Badge variant="secondary" className="text-sm px-4 py-2">
                 <TrendingUp className="w-4 h-4 mr-2" />
@@ -266,7 +242,7 @@ const Guide = () => {
             <TabsTrigger value="getting-started">Getting Started</TabsTrigger>
             <TabsTrigger value="tutorials">Video Tutorials</TabsTrigger>
             <TabsTrigger value="faq">FAQ</TabsTrigger>
-            <TabsTrigger value="advanced">Admin & Advanced</TabsTrigger>
+            <TabsTrigger value="affiliates">Affiliates</TabsTrigger>
           </TabsList>
 
           {/* Features Tab */}
@@ -336,22 +312,15 @@ const Guide = () => {
                   <div className="flex items-start gap-3">
                     <MessageSquare className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-medium">Unlimited AI Coaching</p>
-                      <p className="text-sm text-muted-foreground">24/7 access to your AI coach</p>
+                      <p className="font-medium">Unlimited Coaching</p>
+                      <p className="text-sm text-muted-foreground">24/7 access to your coach</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <ChefHat className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                     <div>
                       <p className="font-medium">Advanced Meal Planning</p>
-                      <p className="text-sm text-muted-foreground">AI-powered weekly meal plans</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <TrendingUp className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-medium">Progress Reports</p>
-                      <p className="text-sm text-muted-foreground">Detailed weekly analytics</p>
+                      <p className="text-sm text-muted-foreground">Weekly meal plans</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
@@ -425,7 +394,7 @@ const Guide = () => {
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="w-4 h-4 text-primary mt-1 flex-shrink-0" />
-                      <span className="text-sm">Use the AI coach when you're unsure about form or technique</span>
+                      <span className="text-sm">Use the coach when you're unsure about form or technique</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="w-4 h-4 text-primary mt-1 flex-shrink-0" />
@@ -501,14 +470,14 @@ const Guide = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Can't find what you're looking for? Chat with our AI coach for instant help, or reach out to our support team.
+                  Can't find what you're looking for? Chat with our coach for instant help, or reach out to our support team.
                 </p>
                 <div className="flex gap-3">
                   <MessageSquare className="w-5 h-5 text-primary mt-0.5" />
                   <div>
-                    <p className="font-medium">AI Coach Support</p>
+                    <p className="font-medium">Coach Support</p>
                     <p className="text-sm text-muted-foreground">
-                      Ask your AI coach any questions - available in the Chat section
+                      Ask your coach any questions - available in the Chat section
                     </p>
                   </div>
                 </div>
@@ -516,8 +485,8 @@ const Guide = () => {
             </Card>
           </TabsContent>
 
-          {/* Admin & Advanced Tab */}
-          <TabsContent value="advanced" className="space-y-6">
+          {/* Affiliates Tab */}
+          <TabsContent value="affiliates" className="space-y-6">
             {/* Affiliate Disclosure */}
             <Card className="border-amber-500/30 bg-amber-500/5">
               <CardHeader>
@@ -570,149 +539,6 @@ const Guide = () => {
                       <p className="text-sm text-muted-foreground">
                         Suggestions are based on your workouts, nutrition, and goals
                       </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Admin Dashboard */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-primary" />
-                  <CardTitle>Admin Dashboard</CardTitle>
-                </div>
-                <CardDescription>
-                  Platform analytics and management (Admin access required)
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <h3 className="font-semibold mb-3 flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4 text-primary" />
-                    Dashboard Features
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 border rounded-lg">
-                      <p className="font-medium mb-2">User Analytics</p>
-                      <ul className="space-y-1 text-sm text-muted-foreground">
-                        <li>• Total users and subscription breakdown</li>
-                        <li>• Active subscriptions and conversion rates</li>
-                        <li>• Recent user registrations</li>
-                        <li>• User engagement metrics</li>
-                      </ul>
-                    </div>
-                    <div className="p-4 border rounded-lg">
-                      <p className="font-medium mb-2">Revenue Tracking</p>
-                      <ul className="space-y-1 text-sm text-muted-foreground">
-                        <li>• Total revenue from all sources</li>
-                        <li>• Subscription revenue breakdown</li>
-                        <li>• Premium conversion metrics</li>
-                        <li>• Revenue trends and projections</li>
-                      </ul>
-                    </div>
-                    <div className="p-4 border rounded-lg">
-                      <p className="font-medium mb-2">Feature Usage</p>
-                      <ul className="space-y-1 text-sm text-muted-foreground">
-                        <li>• AI coaching interactions</li>
-                        <li>• Workout and nutrition tracking</li>
-                        <li>• Wellness check-ins</li>
-                        <li>• Goal setting engagement</li>
-                      </ul>
-                    </div>
-                    <div className="p-4 border rounded-lg">
-                      <p className="font-medium mb-2">Affiliate Analytics</p>
-                      <ul className="space-y-1 text-sm text-muted-foreground">
-                        <li>• Total clicks and conversions</li>
-                        <li>• Conversion rate tracking</li>
-                        <li>• Top performing products</li>
-                        <li>• Commission revenue reports</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-muted rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <MousePointerClick className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-medium mb-1">Accessing the Dashboard</p>
-                      <p className="text-sm text-muted-foreground">
-                        Only users with administrator privileges can access the admin dashboard. 
-                        Look for the "Admin" link in the navigation menu if you have admin access.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Role System */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Users className="w-5 h-5 text-primary" />
-                  <CardTitle>Role-Based Access System</CardTitle>
-                </div>
-                <CardDescription>
-                  How user roles and permissions work
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-4">
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-start gap-3 mb-2">
-                      <Users className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="font-medium">Regular User</p>
-                        <p className="text-sm text-muted-foreground">
-                          Standard access to all fitness features including workouts, nutrition tracking, 
-                          AI coaching, and wellness check-ins. Can upgrade to Premium for advanced features.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-start gap-3 mb-2">
-                      <Shield className="w-5 h-5 text-purple-500 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="font-medium">Administrator</p>
-                        <p className="text-sm text-muted-foreground">
-                          Full platform access including the admin dashboard with analytics, user management, 
-                          revenue tracking, and affiliate performance metrics. Required for platform moderation.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-start gap-3 mb-2">
-                      <Award className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="font-medium">Moderator</p>
-                        <p className="text-sm text-muted-foreground">
-                          Limited administrative access for community management and content moderation. 
-                          Can review user-generated content and manage community guidelines.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <Shield className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-medium mb-2">Security & Privacy</p>
-                      <ul className="space-y-1 text-sm text-muted-foreground">
-                        <li>• Roles are stored securely in a dedicated database table</li>
-                        <li>• All permissions are verified server-side, not client-side</li>
-                        <li>• Users cannot self-assign admin or moderator roles</li>
-                        <li>• Role changes are logged for audit purposes</li>
-                        <li>• Admins can only be assigned by other administrators</li>
-                      </ul>
                     </div>
                   </div>
                 </div>
@@ -996,15 +822,15 @@ const Guide = () => {
               </CardContent>
             </Card>
 
-            {/* AI Coaching Videos */}
+            {/* Coaching Videos */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-xl flex items-center gap-2">
                   <MessageSquare className="w-5 h-5 text-primary" />
-                  AI Coaching
+                  Coaching
                 </CardTitle>
                 <CardDescription>
-                  Get the most out of your AI fitness coach
+                  Get the most out of your coach
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -1014,25 +840,25 @@ const Guide = () => {
                       <div className="absolute inset-0 flex items-center justify-center bg-primary/10">
                         <div className="text-center space-y-2">
                           <PlayCircle className="w-16 h-16 text-primary mx-auto" />
-                          <p className="text-sm font-medium">Using AI Coach</p>
+                          <p className="text-sm font-medium">Using Your Coach</p>
                         </div>
                       </div>
                       <iframe
                         className="w-full h-full"
                         src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-                        title="Using AI Coach"
+                        title="Using Your Coach"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
                       />
                     </div>
                     <div className="space-y-1">
-                      <h3 className="font-semibold">Using AI Coach</h3>
+                      <h3 className="font-semibold">Using Your Coach</h3>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Clock className="w-4 h-4" />
                         <span>6:00</span>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        Get personalized advice, workout suggestions, and form tips from your AI coach
+                        Get personalized advice, workout suggestions, and form tips from your coach
                       </p>
                     </div>
                   </div>
@@ -1086,20 +912,20 @@ const Guide = () => {
                       <div className="absolute inset-0 flex items-center justify-center bg-primary/10">
                         <div className="text-center space-y-2">
                           <PlayCircle className="w-16 h-16 text-primary mx-auto" />
-                          <p className="text-sm font-medium">AI Meal Planning</p>
+                          <p className="text-sm font-medium">Meal Planning</p>
                         </div>
                       </div>
                       <iframe
                         className="w-full h-full"
                         src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-                        title="AI Meal Planning"
+                        title="Meal Planning"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
                       />
                     </div>
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">AI Meal Planning</h3>
+                        <h3 className="font-semibold">Meal Planning</h3>
                         <Badge variant="default" className="text-xs">Premium</Badge>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -1107,7 +933,7 @@ const Guide = () => {
                         <span>9:00</span>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        Let AI create personalized weekly meal plans with shopping lists
+                        Create personalized weekly meal plans with shopping lists
                       </p>
                     </div>
                   </div>

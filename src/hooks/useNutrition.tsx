@@ -28,6 +28,62 @@ export interface FoodItem {
   categories?: string[] | null;
 }
 
+// Both Add Food surfaces (the dashboard card and /nutrition) collect the same
+// free-text form, so the mapping to a meals row lives here rather than being
+// duplicated — and getting it wrong is silent:
+//   * meals.meal_type has a CHECK (breakfast|lunch|dinner|snack). The Select
+//     defaults to '', which the constraint rejects, so a blank must become
+//     undefined rather than ''.
+//   * the form field is "fats" but getTodaysNutrition below aggregates
+//     macros.fat. Writing "fats" would store fine and read back as 0.
+//   * meals.food_items is NOT NULL, and meals has no notes column, so the note
+//     rides along on the food item instead of being dropped.
+export interface FoodFormValues {
+  name: string;
+  calories: string;
+  protein: string;
+  carbs: string;
+  fats: string;
+  fiber: string;
+  servingSize: string;
+  mealType: string;
+  notes: string;
+}
+
+const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'] as const;
+
+export const buildMealFromFoodForm = (form: FoodFormValues) => {
+  const num = (value: string) => {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
+  const name = form.name.trim();
+  const calories = Math.round(num(form.calories));
+  const macros = {
+    protein: num(form.protein),
+    carbs: num(form.carbs),
+    fat: num(form.fats),
+    fiber: num(form.fiber),
+  };
+  const notes = form.notes.trim();
+  const servingSize = form.servingSize.trim();
+
+  return {
+    meal_type: MEAL_TYPES.find(type => type === form.mealType),
+    description: name,
+    total_calories: calories,
+    macros,
+    food_items: [{
+      name,
+      serving_size: servingSize || null,
+      calories,
+      macros,
+      ...(notes ? { notes } : {}),
+    }],
+  };
+};
+
 export const useNutrition = () => {
   const { user } = useAuth();
   const { toast } = useToast();

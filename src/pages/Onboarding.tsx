@@ -24,6 +24,7 @@ import FitMateHeader from "@/components/FitMateHeader";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
+import { cacheOnboardingComplete } from "@/lib/onboarding";
 
 interface OnboardingData {
   fitness_goals: string[];
@@ -137,8 +138,9 @@ const Onboarding = () => {
         primary_focus: data.primary_focus,
       });
 
-      // Mark onboarding as complete in localStorage for backward compatibility
-      localStorage.setItem('onboarding_complete', 'true');
+      // Cache under this user's key so the next page load skips the DB round
+      // trip. Sign-out clears it; it is not shared between accounts.
+      cacheOnboardingComplete(user.id);
       sessionStorage.setItem('onboarding_just_completed', 'true');
       
       toast({
@@ -172,11 +174,11 @@ const Onboarding = () => {
         onboarding_skipped: true,
       });
 
-      localStorage.setItem('onboarding_complete', 'true');
+      cacheOnboardingComplete(user.id);
       navigate("/");
     } catch (error) {
       // Even if save fails, allow skip
-      localStorage.setItem('onboarding_complete', 'true');
+      cacheOnboardingComplete(user.id);
       navigate("/");
     }
   };

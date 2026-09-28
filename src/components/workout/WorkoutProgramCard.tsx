@@ -1,8 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { WorkoutProgram } from "@/data/workoutPrograms";
-import { Clock, Users, Calendar, Target, Star, Play } from "lucide-react";
+import { WorkoutProgram, workoutDayMinutes } from "@/data/workoutPrograms";
+import { Clock, Calendar, Target, Play } from "lucide-react";
 
 interface WorkoutProgramCardProps {
   program: WorkoutProgram;
@@ -54,7 +54,8 @@ const WorkoutProgramCard = ({ program, onStart, onCustomize }: WorkoutProgramCar
       
       <CardContent>
         <div className="space-y-4">
-          {/* Program Stats */}
+          {/* Program Stats. No user count or rating: there is no userbase to
+              count and no review mechanism to average. */}
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-muted-foreground" />
@@ -63,14 +64,6 @@ const WorkoutProgramCard = ({ program, onStart, onCustomize }: WorkoutProgramCar
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-muted-foreground" />
               <span>{program.days_per_week} days/week</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-muted-foreground" />
-              <span>{program.participants.toLocaleString()} users</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Star className="w-4 h-4 text-yellow-500" />
-              <span>{program.rating}/5</span>
             </div>
           </div>
 
@@ -107,7 +100,7 @@ const WorkoutProgramCard = ({ program, onStart, onCustomize }: WorkoutProgramCar
                   <span className="font-medium">{day.name}</span>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Clock className="w-3 h-3" />
-                    <span>{day.estimated_duration}min</span>
+                    <span>{workoutDayMinutes(day)}min</span>
                   </div>
                 </div>
               ))}

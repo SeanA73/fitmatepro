@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { exerciseDatabase, Exercise, WorkoutProgram } from "@/data/workoutPrograms";
+import { exerciseDatabase, Exercise, WorkoutProgram, workoutDayMinutes } from "@/data/workoutPrograms";
 import { Plus, X, Save, Search } from "lucide-react";
 import { toast } from "sonner";
 
@@ -91,21 +91,13 @@ const CreateWorkoutForm = ({ initialProgram, onSave, onCancel }: CreateWorkoutFo
       return;
     }
 
-    const estimatedDuration = selectedExercises.reduce((total, exercise) => {
-      if (exercise.duration) {
-        return total + (exercise.duration / 60) + (exercise.rest_time || 0) / 60;
-      } else {
-        return total + (exercise.sets || 1) * 2 + (exercise.rest_time || 0) / 60;
-      }
-    }, 0);
-
+    // No stored duration: this formula moved to workoutDayDuration() in
+    // workoutPrograms.ts and every surface now derives from the exercise list.
     const workoutDay = {
       id: `day_${Date.now()}`,
       name: `Workout Day ${(programData.workout_days?.length || 0) + 1}`,
       focus: [...new Set(selectedExercises.flatMap(e => e.muscle_groups))],
-      exercises: [...selectedExercises],
-      estimated_duration: Math.round(estimatedDuration),
-      calories_burned: Math.round(estimatedDuration * 6) // Rough estimation
+      exercises: [...selectedExercises]
     };
 
     setProgramData(prev => ({
@@ -142,13 +134,12 @@ const CreateWorkoutForm = ({ initialProgram, onSave, onCancel }: CreateWorkoutFo
       equipment_needed: programData.equipment_needed!,
       workout_days: programData.workout_days!,
       created_by: 'You',
-      rating: 0,
-      participants: 0,
       is_template: false
     };
 
+    // The caller persists this and raises the success/failure toast. This form
+    // must not announce a save it cannot confirm.
     onSave(newProgram);
-    toast.success(initialProgram ? "Program updated!" : "Program created!");
   };
 
   return (
@@ -389,7 +380,7 @@ const CreateWorkoutForm = ({ initialProgram, onSave, onCancel }: CreateWorkoutFo
                     ))}
                   </div>
                   <div className="text-sm text-muted-foreground mb-2">
-                    {day.estimated_duration} minutes • {day.calories_burned} calories
+                    {workoutDayMinutes(day)} minutes
                   </div>
                   <div className="text-sm">
                     <strong>Exercises:</strong> {day.exercises.map(e => e.name).join(', ')}

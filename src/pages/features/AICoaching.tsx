@@ -5,9 +5,17 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, MessageCircle, Zap, Clock, Brain, TrendingUp, Star } from "lucide-react";
 import FitMateHeader from "@/components/FitMateHeader";
+import { useAuth } from "@/hooks/useAuth";
+import { Seo } from '@/components/Seo';
 
 const AICoaching = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // Public marketing page. Signed-in users go to the chat; the upgrade CTA
+  // sends them to pricing rather than back to the login screen.
+  const startHere = () => navigate(user ? "/chat" : "/auth?plan=free");
+  const upgradeHere = () => navigate(user ? "/pricing" : "/auth?trial=true&plan=premium");
 
   const features = [
     {
@@ -43,26 +51,16 @@ const AICoaching = () => {
     "Supplement guidance"
   ];
 
-  const testimonials = [
-    {
-      name: "Sarah M.",
-      text: "The AI coach helped me break through my plateau and reach my strength goals!",
-      rating: 5
-    },
-    {
-      name: "Mike R.",
-      text: "Having 24/7 access to fitness advice has completely transformed my approach to training.",
-      rating: 5
-    },
-    {
-      name: "Emma L.",
-      text: "The personalized tips and motivation keep me on track even on difficult days.",
-      rating: 5
-    }
-  ];
+  const testimonials: { name: string; text: string; rating: number }[] = [];
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title="Coaching — Fitness Answers Whenever You Need Them"
+        description="Ask about training, form, nutrition and goal setting, and get guidance shaped by the workouts and meals you have actually logged, not generic advice."
+        path="/features/ai-coaching"
+        noindex
+      />
       <FitMateHeader />
       
       <main className="pt-20">
@@ -84,19 +82,19 @@ const AICoaching = () => {
               </div>
               <div>
                 <Badge variant="default" className="mb-2">Premium Feature</Badge>
-                <h1 className="text-4xl md:text-5xl font-bold">AI Personal Coach</h1>
+                <h1 className="text-4xl md:text-5xl font-bold">Personal Coach</h1>
               </div>
             </div>
             
             <p className="text-xl text-muted-foreground mb-8 max-w-3xl">
-              Get unlimited access to your personal AI fitness coach. Ask questions, receive personalized 
-              advice, and get motivation whenever you need it - all powered by advanced AI technology.
+              Get unlimited access to your personal fitness coach. Ask questions, receive personalized
+              advice, and get motivation whenever you need it.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" onClick={() => navigate("/auth")}>
+              <Button size="lg" onClick={startHere}>
                 <MessageCircle className="w-5 h-5 mr-2" />
-                Chat with AI Coach
+                {user ? "Open Coach Chat" : "Try Coach Chat"}
               </Button>
               <Button size="lg" variant="outline" onClick={() => navigate("/")}>
                 View All Features
@@ -108,7 +106,7 @@ const AICoaching = () => {
         {/* Key Features */}
         <section className="py-16">
           <div className="max-w-6xl mx-auto px-6">
-            <h2 className="text-3xl font-bold text-center mb-12">Your Personal AI Coach</h2>
+            <h2 className="text-3xl font-bold text-center mb-12">Your Personal Coach</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {features.map((feature, index) => (
                 <Card key={index} className="hover:shadow-lg transition-shadow">
@@ -171,7 +169,7 @@ const AICoaching = () => {
         {/* How It Works */}
         <section className="py-16 bg-muted/30">
           <div className="max-w-4xl mx-auto px-6">
-            <h2 className="text-3xl font-bold text-center mb-12">How AI Coaching Works</h2>
+            <h2 className="text-3xl font-bold text-center mb-12">How Coaching Works</h2>
             <div className="space-y-8">
               <div className="flex items-start gap-4">
                 <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center text-white font-bold">1</div>
@@ -183,8 +181,8 @@ const AICoaching = () => {
               <div className="flex items-start gap-4">
                 <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center text-white font-bold">2</div>
                 <div>
-                  <h3 className="text-xl font-semibold mb-2">AI Analyzes Your Profile</h3>
-                  <p className="text-muted-foreground">Our AI considers your goals, fitness level, and progress history to provide personalized advice.</p>
+                  <h3 className="text-xl font-semibold mb-2">We Analyze Your Profile</h3>
+                  <p className="text-muted-foreground">We consider your goals, fitness level, and progress history to provide personalized advice.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
@@ -203,13 +201,13 @@ const AICoaching = () => {
           <div className="max-w-4xl mx-auto px-6 text-center">
             <div className="bg-gradient-to-r from-primary to-secondary rounded-3xl p-8 md:p-12 text-white">
               <h3 className="text-3xl md:text-4xl font-bold mb-4">
-                Get Your Personal AI Coach
+                Get Your Personal Coach
               </h3>
               <p className="text-xl mb-8 text-white/90 max-w-2xl mx-auto">
                 Upgrade to Premium and get unlimited access to personalized fitness coaching.
               </p>
-              <Button size="lg" variant="secondary" onClick={() => navigate("/auth")}>
-                Start Premium Trial
+              <Button size="lg" variant="secondary" onClick={upgradeHere}>
+                {user ? "See Plans" : "Start Premium Trial"}
               </Button>
             </div>
           </div>

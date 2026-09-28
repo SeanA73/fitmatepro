@@ -14,13 +14,19 @@ export interface Exercise {
   image_url?: string;
 }
 
+// No estimated_duration field. It used to be a hand-written number per day
+// (45, 50, 55, 75, 80, 90...) whose comment claimed it was "derived from sets
+// and rest times" — it was not. day1_upper asserted 45 minutes over three
+// exercises worth roughly 25, and because the player used that number as its
+// countdown target, completion only fired after 45 minutes of which 20 had no
+// exercise left to run. That is why workout_sessions had zero rows. Duration is
+// now computed from the exercises by workoutDayDuration() below, so the total
+// and the sum of its parts cannot drift apart again.
 export interface WorkoutDay {
   id: string;
   name: string;
   focus: string[];
   exercises: Exercise[];
-  estimated_duration: number; // in minutes
-  calories_burned: number;
 }
 
 export interface WorkoutProgram {
@@ -35,8 +41,6 @@ export interface WorkoutProgram {
   equipment_needed: string[];
   workout_days: WorkoutDay[];
   created_by: string;
-  rating: number;
-  participants: number;
   is_template: boolean;
 }
 
@@ -210,16 +214,12 @@ export const preBuiltPrograms: WorkoutProgram[] = [
     goals: ['Build base strength', 'Learn proper form', 'Establish routine'],
     equipment_needed: ['Barbell', 'Dumbbells', 'Bench'],
     created_by: 'FitMatePro',
-    rating: 4.8,
-    participants: 2847,
     is_template: true,
     workout_days: [
       {
         id: 'day1_upper',
         name: 'Upper Body Focus',
         focus: ['Chest', 'Back', 'Arms'],
-        estimated_duration: 45,
-        calories_burned: 280,
         exercises: [
           exerciseDatabase[0], // Bench Press
           exerciseDatabase[2], // Pull-ups
@@ -230,8 +230,6 @@ export const preBuiltPrograms: WorkoutProgram[] = [
         id: 'day2_lower',
         name: 'Lower Body Focus',
         focus: ['Legs', 'Glutes'],
-        estimated_duration: 50,
-        calories_burned: 320,
         exercises: [
           exerciseDatabase[3], // Squats
           exerciseDatabase[5], // Lunges
@@ -242,8 +240,6 @@ export const preBuiltPrograms: WorkoutProgram[] = [
         id: 'day3_full',
         name: 'Full Body',
         focus: ['Full Body'],
-        estimated_duration: 55,
-        calories_burned: 350,
         exercises: [
           exerciseDatabase[4], // Deadlifts
           exerciseDatabase[1], // Push-ups
@@ -262,17 +258,13 @@ export const preBuiltPrograms: WorkoutProgram[] = [
     description: 'Traditional bodybuilding approach focusing on muscle hypertrophy',
     goals: ['Muscle growth', 'Improved definition', 'Strength gains'],
     equipment_needed: ['Full Gym Access', 'Dumbbells', 'Cables', 'Machines'],
-    created_by: 'Mike Mentzer Jr.',
-    rating: 4.9,
-    participants: 1956,
+    created_by: 'FitMatePro',
     is_template: true,
     workout_days: [
       {
         id: 'chest_day',
         name: 'Chest & Triceps',
         focus: ['Chest', 'Triceps'],
-        estimated_duration: 75,
-        calories_burned: 420,
         exercises: [
           exerciseDatabase[0], // Bench Press
           exerciseDatabase[1], // Push-ups
@@ -282,8 +274,6 @@ export const preBuiltPrograms: WorkoutProgram[] = [
         id: 'back_day',
         name: 'Back & Biceps',
         focus: ['Back', 'Biceps'],
-        estimated_duration: 80,
-        calories_burned: 380,
         exercises: [
           exerciseDatabase[2], // Pull-ups
           exerciseDatabase[4], // Deadlifts
@@ -293,8 +283,6 @@ export const preBuiltPrograms: WorkoutProgram[] = [
         id: 'leg_day',
         name: 'Legs & Glutes',
         focus: ['Legs', 'Glutes'],
-        estimated_duration: 90,
-        calories_burned: 480,
         exercises: [
           exerciseDatabase[3], // Squats
           exerciseDatabase[5], // Lunges
@@ -313,17 +301,13 @@ export const preBuiltPrograms: WorkoutProgram[] = [
     description: 'High-intensity interval training for fat loss and conditioning',
     goals: ['Fat loss', 'Cardiovascular health', 'Endurance'],
     equipment_needed: ['None', 'Bodyweight Only'],
-    created_by: 'Sarah Cardio',
-    rating: 4.7,
-    participants: 3421,
+    created_by: 'FitMatePro',
     is_template: true,
     workout_days: [
       {
         id: 'hiit_1',
         name: 'Full Body HIIT',
         focus: ['Full Body', 'Cardio'],
-        estimated_duration: 25,
-        calories_burned: 350,
         exercises: [
           exerciseDatabase[6], // Burpees
           exerciseDatabase[7], // Mountain Climbers
@@ -334,8 +318,6 @@ export const preBuiltPrograms: WorkoutProgram[] = [
         id: 'hiit_2',
         name: 'Lower Body Power',
         focus: ['Legs', 'Cardio'],
-        estimated_duration: 30,
-        calories_burned: 380,
         exercises: [
           exerciseDatabase[3], // Squats
           exerciseDatabase[5], // Lunges
@@ -354,17 +336,13 @@ export const preBuiltPrograms: WorkoutProgram[] = [
     description: 'Focus on the big three: squat, bench, deadlift for maximum strength',
     goals: ['Max strength', 'Powerlifting technique', 'Competition prep'],
     equipment_needed: ['Barbell', 'Squat Rack', 'Bench', 'Platform'],
-    created_by: 'Ed Coan Jr.',
-    rating: 4.9,
-    participants: 892,
+    created_by: 'FitMatePro',
     is_template: true,
     workout_days: [
       {
         id: 'squat_day',
         name: 'Squat Focus',
         focus: ['Legs', 'Core'],
-        estimated_duration: 90,
-        calories_burned: 380,
         exercises: [
           exerciseDatabase[3], // Squats
           exerciseDatabase[5], // Lunges
@@ -374,8 +352,6 @@ export const preBuiltPrograms: WorkoutProgram[] = [
         id: 'bench_day',
         name: 'Bench Focus',
         focus: ['Chest', 'Triceps'],
-        estimated_duration: 75,
-        calories_burned: 320,
         exercises: [
           exerciseDatabase[0], // Bench Press
           exerciseDatabase[1], // Push-ups
@@ -385,8 +361,6 @@ export const preBuiltPrograms: WorkoutProgram[] = [
         id: 'deadlift_day',
         name: 'Deadlift Focus',
         focus: ['Back', 'Hamstrings'],
-        estimated_duration: 85,
-        calories_burned: 400,
         exercises: [
           exerciseDatabase[4], // Deadlifts
           exerciseDatabase[2], // Pull-ups
@@ -404,17 +378,13 @@ export const preBuiltPrograms: WorkoutProgram[] = [
     description: 'Well-rounded program for overall health and fitness',
     goals: ['General health', 'Weight management', 'Energy boost'],
     equipment_needed: ['Dumbbells', 'Resistance Bands', 'Mat'],
-    created_by: 'Wellness Team',
-    rating: 4.6,
-    participants: 4235,
+    created_by: 'FitMatePro',
     is_template: true,
     workout_days: [
       {
         id: 'cardio_strength',
         name: 'Cardio & Strength',
         focus: ['Cardio', 'Full Body'],
-        estimated_duration: 40,
-        calories_burned: 320,
         exercises: [
           exerciseDatabase[6], // Burpees
           exerciseDatabase[1], // Push-ups
@@ -425,8 +395,6 @@ export const preBuiltPrograms: WorkoutProgram[] = [
         id: 'flexibility_core',
         name: 'Flexibility & Core',
         focus: ['Core', 'Flexibility'],
-        estimated_duration: 35,
-        calories_burned: 180,
         exercises: [
           exerciseDatabase[8], // Plank
           exerciseDatabase[7], // Mountain Climbers
@@ -435,3 +403,75 @@ export const preBuiltPrograms: WorkoutProgram[] = [
     ]
   }
 ];
+
+// ---------------------------------------------------------------------------
+// Standalone (non-program) sessions.
+//
+// There is exactly one. It used to live inline in WorkoutSession.tsx as the
+// fallback branch, which meant /workout/:id ignored its own :id and every
+// "Start Workout" button in the app opened this same session under six
+// different invented names. It lives here now so the route can resolve a real
+// record by id, and so the browse card and the player read one source.
+//
+// Durations are per-exercise and real; total duration is derived below rather
+// than asserted.
+// ---------------------------------------------------------------------------
+export interface StandaloneExercise {
+  name: string;
+  duration: number; // seconds
+  description: string;
+}
+
+export interface StandaloneWorkout {
+  id: string;
+  title: string;
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  description: string;
+  exercises: StandaloneExercise[];
+}
+
+export const standaloneWorkouts: StandaloneWorkout[] = [
+  {
+    id: 'morning-energy-boost',
+    title: 'Morning Energy Boost',
+    difficulty: 'Beginner',
+    description: 'A short full-body warm-up to start the day.',
+    exercises: [
+      { name: 'Warm-up Stretches', duration: 120, description: 'Gentle movements to prepare your body' },
+      { name: 'Jumping Jacks', duration: 60, description: 'Get your heart rate up with classic cardio' },
+      { name: 'Bodyweight Squats', duration: 90, description: 'Strengthen your legs and glutes' },
+      { name: 'Push-ups (Modified)', duration: 60, description: 'Build upper body strength at your pace' },
+      { name: 'Plank Hold', duration: 45, description: 'Core strengthening exercise' },
+      { name: 'Mountain Climbers', duration: 75, description: 'Full body cardio movement' },
+      { name: 'Cool-down Stretches', duration: 150, description: 'Relax and stretch your worked muscles' },
+    ],
+  },
+];
+
+export const standaloneWorkoutDuration = (workout: StandaloneWorkout): number =>
+  workout.exercises.reduce((total, exercise) => total + exercise.duration, 0);
+
+// ---------------------------------------------------------------------------
+// Derived durations for program workout days.
+//
+// One formula, used by the player, the browse cards, the program detail page and
+// the create-a-workout preview. It is the formula CreateWorkoutForm already
+// applied to user-authored days (sets * 2 minutes, plus one rest interval),
+// lifted here so a pre-built day and a user-built day holding the same
+// exercises report the same length instead of disagreeing by author.
+// ---------------------------------------------------------------------------
+
+// How long one exercise occupies the player, in seconds. Time-based exercises
+// use their own duration; set-based ones are estimated, since "8-10 reps" has no
+// fixed length. Rest is counted once per exercise, not once per set — that is
+// what the original formula did, and it is the convention the numbers assume.
+export const exerciseBlockSeconds = (exercise: Exercise): number =>
+  (exercise.duration ?? (exercise.sets ?? 1) * 120) + (exercise.rest_time ?? 0);
+
+// Total seconds for a workout day: exactly the sum of its exercise blocks.
+export const workoutDayDuration = (day: Pick<WorkoutDay, 'exercises'>): number =>
+  day.exercises.reduce((total, exercise) => total + exerciseBlockSeconds(exercise), 0);
+
+// Rounded minutes, for display.
+export const workoutDayMinutes = (day: Pick<WorkoutDay, 'exercises'>): number =>
+  Math.round(workoutDayDuration(day) / 60);

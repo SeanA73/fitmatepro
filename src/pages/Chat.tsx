@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { useSubscription } from "@/hooks/useSubscription";
 import { UpgradePrompt } from "@/components/subscription/UpgradePrompt";
 import { useToast } from "@/hooks/use-toast";
+import FitMateHeader from "@/components/FitMateHeader";
 import { supabase } from "@/integrations/supabase/client";
 
 const Chat = () => {
@@ -163,7 +164,8 @@ const Chat = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
+      <FitMateHeader />
+      {/* Page context bar */}
       <div className="border-b border-border bg-card/50 backdrop-blur-sm">
         <div className="max-w-4xl mx-auto px-6 py-4">
           <div className="flex items-center gap-4">
@@ -274,6 +276,7 @@ const Chat = () => {
         {showUpgradePrompt && !hasPremiumAccess() && (
           <div className="mt-4">
             <UpgradePrompt
+              variant="modal"
               trigger="ai_limit_reached"
               featureName="ai_interactions_per_day"
               onClose={() => {

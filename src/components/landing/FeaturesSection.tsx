@@ -1,86 +1,71 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { 
-  Dumbbell, 
-  Apple, 
-  Brain, 
-  BarChart3, 
-  MessageCircle, 
-  Users, 
-  Target, 
+import {
+  Dumbbell,
+  Apple,
+  Brain,
+  MessageCircle,
+  Users,
   Zap,
   Heart,
-  Calendar,
-  Trophy,
-  Smartphone
+  Trophy
 } from "lucide-react";
 
 const FeaturesSection = () => {
   const navigate = useNavigate();
+  // Each card carries its own destination. This used to be an index lookup into
+  // a separate array whose order didn't match, so "Custom Workout Plans" opened
+  // the personal-coaching page. Cards for deleted pages (advanced analytics,
+  // goal setting, wearable integration, personal coaching) are gone with them.
   const features = [
     {
       icon: <Dumbbell className="w-8 h-8 text-primary" />,
-      title: "Smart Workout Planning",
-      description: "AI-generated workout plans tailored to your fitness level, goals, and available equipment.",
+      title: "Workout Planning",
+      description: "Follow structured programs or build your own, and track every session.",
       badge: "Free",
-      highlights: ["Custom routines", "Exercise library", "Video guides"]
+      route: "/features/workout-planning",
+      highlights: ["Structured programs", "Exercise library", "Session tracking"]
     },
     {
       icon: <Apple className="w-8 h-8 text-primary" />,
       title: "Nutrition Tracking",
-      description: "Log meals, track macros, and get personalized nutrition advice from your AI coach.",
+      description: "Log meals and track calories and macros against your daily targets.",
       badge: "Free",
-      highlights: ["Meal logging", "Macro tracking", "Recipe suggestions"]
+      route: "/features/nutrition-tracking",
+      highlights: ["Meal logging", "Macro tracking", "Daily targets"]
     },
     {
       icon: <Brain className="w-8 h-8 text-primary" />,
       title: "Mental Wellness",
-      description: "Daily check-ins, mood tracking, and mindfulness exercises for holistic health.",
+      description: "Daily check-ins for mood, energy, sleep and stress, with trends over time.",
       badge: "Free",
-      highlights: ["Mood tracking", "Stress management", "Wellness insights"]
+      route: "/features/mental-wellness",
+      highlights: ["Mood tracking", "Sleep and stress", "Wellness trends"]
     },
     {
       icon: <MessageCircle className="w-8 h-8 text-accent" />,
-      title: "AI Personal Coach",
-      description: "Chat with FitMatePro anytime for instant fitness advice, motivation, and support.",
-      badge: "Premium",
-      highlights: ["24/7 availability", "Personalized tips", "Progress insights"]
-    },
-    {
-      icon: <BarChart3 className="w-8 h-8 text-accent" />,
-      title: "Advanced Analytics",
-      description: "Detailed progress tracking with visual charts and predictive insights.",
-      badge: "Premium",
-      highlights: ["Progress charts", "Goal tracking", "Performance metrics"]
+      title: "Coach Chat",
+      description: "A guided chat space for your fitness questions.",
+      badge: "Free",
+      route: "/features/ai-coaching",
+      highlights: ["Quick prompts", "Fitness guidance", "Wellness support"]
     },
     {
       icon: <Users className="w-8 h-8 text-accent" />,
       title: "Community Features",
-      description: "Join group workouts, share achievements, and connect with like-minded people.",
+      description: "Share achievements and connect with like-minded people.",
       badge: "Premium",
-      highlights: ["Group classes", "Social sharing", "Challenges"]
-    },
-    {
-      icon: <Target className="w-8 h-8 text-accent" />,
-      title: "Goal Setting & Tracking",
-      description: "Set SMART goals and track your progress with intelligent milestone suggestions.",
-      badge: "Premium",
-      highlights: ["SMART goals", "Milestone tracking", "Achievement system"]
-    },
-    {
-      icon: <Smartphone className="w-8 h-8 text-accent" />,
-      title: "Wearable Integration",
-      description: "Sync with fitness trackers and smartwatches for comprehensive health monitoring.",
-      badge: "Premium",
-      highlights: ["Device sync", "Heart rate monitoring", "Sleep tracking"]
+      route: "/features/community-features",
+      highlights: ["Social sharing", "Challenges", "Shared goals"]
     },
     {
       icon: <Trophy className="w-8 h-8 text-accent" />,
       title: "Custom Workout Plans",
       description: "Create and save your own personalized workout routines tailored to your goals.",
       badge: "Premium",
-      highlights: ["Custom routines", "Exercise builder", "Save & share"]
+      route: "/premium",
+      highlights: ["Custom routines", "Exercise builder", "Saved to your account"]
     }
   ];
 
@@ -121,27 +106,12 @@ const FeaturesSection = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {features.filter(f => f.badge === "Free").map((feature, index) => {
-                const originalIndex = features.indexOf(feature);
-                const getFeatureRoute = (index: number) => {
-                  const routes = [
-                    '/features/workout-planning',
-                    '/features/nutrition-tracking', 
-                    '/features/mental-wellness',
-                    '/features/ai-coaching',
-                    '/features/advanced-analytics',
-                    '/features/community-features',
-                    '/features/goal-setting',
-                    '/features/wearable-integration',
-                    '/features/personal-coaching'
-                  ];
-                  return routes[index] || '/auth';
-                };
 
                 return (
                   <Card 
                     key={index} 
                     className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-muted cursor-pointer"
-                    onClick={() => navigate(getFeatureRoute(originalIndex))}
+                    onClick={() => navigate(feature.route)}
                   >
                   <CardHeader className="space-y-4">
                     <div className="flex items-start justify-between">
@@ -184,27 +154,12 @@ const FeaturesSection = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {features.filter(f => f.badge === "Premium").map((feature, index) => {
-                const originalIndex = features.indexOf(feature);
-                const getFeatureRoute = (index: number) => {
-                  const routes = [
-                    '/features/workout-planning',
-                    '/features/nutrition-tracking', 
-                    '/features/mental-wellness',
-                    '/features/ai-coaching',
-                    '/features/advanced-analytics',
-                    '/features/community-features',
-                    '/features/goal-setting',
-                    '/features/wearable-integration',
-                    '/features/personal-coaching'
-                  ];
-                  return routes[index] || '/auth';
-                };
 
                 return (
                   <Card 
                     key={index} 
                     className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-primary/20 cursor-pointer bg-gradient-to-br from-primary/5 to-transparent"
-                    onClick={() => navigate(getFeatureRoute(originalIndex))}
+                    onClick={() => navigate(feature.route)}
                   >
                   <CardHeader className="space-y-4">
                     <div className="flex items-start justify-between">
@@ -256,12 +211,11 @@ const FeaturesSection = () => {
               >
                 Start Free Trial
               </button>
-              <button 
+              {/* Was scrolling to [data-section="pricing"], which no element
+                  carries — the button silently did nothing. */}
+              <button
                 className="border-2 border-white/30 text-white hover:bg-white/10 transition-colors px-8 py-4 rounded-full font-semibold text-lg"
-                onClick={() => {
-                  const pricingSection = document.querySelector('[data-section="pricing"]');
-                  pricingSection?.scrollIntoView({ behavior: 'smooth' });
-                }}
+                onClick={() => navigate("/pricing")}
               >
                 View Pricing
               </button>

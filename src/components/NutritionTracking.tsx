@@ -12,27 +12,30 @@ import { Plus, Apple, Utensils, LogIn } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { useNutrition } from "@/hooks/useNutrition";
+import { useNutrition, buildMealFromFoodForm, type FoodFormValues } from "@/hooks/useNutrition";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/EmptyState";
 import ProductRecommendation from "@/components/affiliate/ProductRecommendation";
 
+const EMPTY_FOOD_FORM: FoodFormValues = {
+  name: "",
+  calories: "",
+  protein: "",
+  carbs: "",
+  fats: "",
+  fiber: "",
+  servingSize: "",
+  mealType: "",
+  notes: "",
+};
+
 const NutritionTracking = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { todaysMeals, loading, getTodaysNutrition } = useNutrition();
+  const { todaysMeals, loading, getTodaysNutrition, addMeal } = useNutrition();
   const [addFoodOpen, setAddFoodOpen] = useState(false);
-  const [newFood, setNewFood] = useState({ 
-    name: "", 
-    calories: "", 
-    protein: "", 
-    carbs: "", 
-    fats: "", 
-    fiber: "", 
-    servingSize: "", 
-    mealType: "",
-    notes: ""
-  });
+  const [savingFood, setSavingFood] = useState(false);
+  const [newFood, setNewFood] = useState<FoodFormValues>(EMPTY_FOOD_FORM);
   const { toast } = useToast();
   
   // Calculate nutrition data from today's meals
@@ -44,35 +47,29 @@ const NutritionTracking = () => {
     fats: { current: todaysNutrition.fat, target: 65 },
   };
 
-  const handleAddFood = () => {
-    if (newFood.name && newFood.calories) {
-      const nutritionSummary = [
-        newFood.calories && `${newFood.calories} calories`,
-        newFood.protein && `${newFood.protein}g protein`,
-        newFood.carbs && `${newFood.carbs}g carbs`,
-        newFood.fats && `${newFood.fats}g fats`
-      ].filter(Boolean).join(", ");
-      
+  const handleAddFood = async () => {
+    if (!newFood.name || !newFood.calories) return;
+
+    // Nothing was ever persisted for signed-out users, so don't claim it was.
+    if (!user) {
       toast({
-        title: "Food Added!",
-        description: user 
-          ? `${newFood.name} (${nutritionSummary}) added to your ${newFood.mealType || 'nutrition'} log.`
-          : `${newFood.name} logged temporarily. Sign in to save your data permanently!`,
+        title: "Sign in to log meals",
+        description: "Your nutrition log is saved to your account.",
+        variant: "destructive",
       });
-      
-      setNewFood({ 
-        name: "", 
-        calories: "", 
-        protein: "", 
-        carbs: "", 
-        fats: "", 
-        fiber: "", 
-        servingSize: "", 
-        mealType: "",
-        notes: ""
-      });
-      setAddFoodOpen(false);
+      return;
     }
+
+    setSavingFood(true);
+    // addMeal raises its own success/error toast and refetches todaysMeals.
+    const { error } = await addMeal(buildMealFromFoodForm(newFood));
+    setSavingFood(false);
+
+    // Leave the dialog open on failure so the entry isn't silently lost.
+    if (error) return;
+
+    setNewFood(EMPTY_FOOD_FORM);
+    setAddFoodOpen(false);
   };
 
 
@@ -199,13 +196,13 @@ const NutritionTracking = () => {
                     />
                   </div>
                   
-                  <Button 
-                    onClick={handleAddFood} 
-                    className="w-full" 
+                  <Button
+                    onClick={handleAddFood}
+                    className="w-full"
                     variant="wellness"
-                    disabled={!newFood.name || !newFood.calories}
+                    disabled={!newFood.name || !newFood.calories || savingFood}
                   >
-                    Add to Log
+                    {savingFood ? "Saving..." : "Add to Log"}
                   </Button>
                 </div>
               </DialogContent>
@@ -287,21 +284,25 @@ const NutritionTracking = () => {
           )}
         </div>
 
-        {/* FitMate Suggestion */}
+        {/* Summary of what was actually logged. This used to read "You're doing
+            great with protein today!" for every signed-in user, including one
+            who had logged nothing at all. */}
         <div className="bg-motivation-gradient/10 border border-accent/20 rounded-lg p-4">
           <div className="flex items-start gap-3">
             <Apple className="w-5 h-5 text-accent mt-0.5" />
             <div className="flex-1">
-              <h5 className="font-semibold text-foreground mb-1">FitMatePro's Nutrition Tip</h5>
+              <h5 className="font-semibold text-foreground mb-1">Today's Summary</h5>
               <p className="text-sm text-muted-foreground mb-2">
-                {user 
-                  ? "You're doing great with protein today! For dinner, how about adding some colorful veggies? A rainbow on your plate means a rainbow of nutrients!"
-                  : "Track your nutrition and log your meals. Sign in to save your progress."
+                {!user
+                  ? "Track your nutrition and log your meals. Sign in to save your progress."
+                  : todaysMeals.length === 0
+                    ? "Nothing logged yet today. Add a meal to start tracking your macros."
+                    : `${todaysMeals.length} ${todaysMeals.length === 1 ? 'meal' : 'meals'} logged — ${Math.round(todaysNutrition.calories)} kcal, ${Math.round(todaysNutrition.protein)}g protein.`
                 }
               </p>
               <div className="flex gap-2">
                 <Button variant="motivation" size="sm" onClick={() => navigate("/nutrition")}>
-                  {user ? "Show me recipes" : "Explore recipes"}
+                  {user ? "Open nutrition log" : "Explore nutrition"}
                 </Button>
                 {!user && (
                   <Button variant="wellness" size="sm" onClick={() => navigate("/auth")}>

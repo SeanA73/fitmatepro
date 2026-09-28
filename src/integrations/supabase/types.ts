@@ -10,7 +10,32 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15"
+    PostgrestVersion: "14.5"
+  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -378,6 +403,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_status: string
           activity_level: string | null
           avatar_url: string | null
           created_at: string | null
@@ -386,14 +412,15 @@ export type Database = {
           fitness_goals: string[] | null
           full_name: string | null
           gender: string | null
-          health_conditions: string[] | null
           height_cm: number | null
           id: string
+          paused_at: string | null
           subscription_plan: string | null
           updated_at: string | null
           weight_kg: number | null
         }
         Insert: {
+          account_status?: string
           activity_level?: string | null
           avatar_url?: string | null
           created_at?: string | null
@@ -402,14 +429,15 @@ export type Database = {
           fitness_goals?: string[] | null
           full_name?: string | null
           gender?: string | null
-          health_conditions?: string[] | null
           height_cm?: number | null
           id: string
+          paused_at?: string | null
           subscription_plan?: string | null
           updated_at?: string | null
           weight_kg?: number | null
         }
         Update: {
+          account_status?: string
           activity_level?: string | null
           avatar_url?: string | null
           created_at?: string | null
@@ -418,9 +446,9 @@ export type Database = {
           fitness_goals?: string[] | null
           full_name?: string | null
           gender?: string | null
-          health_conditions?: string[] | null
           height_cm?: number | null
           id?: string
+          paused_at?: string | null
           subscription_plan?: string | null
           updated_at?: string | null
           weight_kg?: number | null
@@ -794,7 +822,7 @@ export type Database = {
           {
             foreignKeyName: "user_preferences_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1130,6 +1158,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],

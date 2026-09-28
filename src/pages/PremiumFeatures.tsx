@@ -14,10 +14,13 @@ import {
   Crown
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import { useSubscription } from "@/hooks/useSubscription";
 
 const PremiumFeatures = () => {
   const { hasPremiumAccess } = useSubscription();
+  const navigate = useNavigate();
 
   const features = [
     {
@@ -68,11 +71,18 @@ const PremiumFeatures = () => {
               You have Premium access
             </Badge>
           ) : (
+            /* This card had no CTA and no link, which made /premium a dead end
+               for the header Crown menu, the footer link, CheckoutCancel and
+               PremiumRoute's fallback redirect — all of which land here. */
             <Card className="mt-4 border-primary/20 bg-primary/5">
-              <CardContent className="p-4">
-                <p className="text-sm text-muted-foreground">
-                  Upgrade to Premium to unlock all these features and more!
+              <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+                <p className="text-sm text-muted-foreground flex-1">
+                  Upgrade to Premium to unlock all these features and more.
                 </p>
+                <Button onClick={() => navigate('/pricing')} className="gap-2 shrink-0">
+                  <Crown className="w-4 h-4" />
+                  View plans &amp; upgrade
+                </Button>
               </CardContent>
             </Card>
           )}

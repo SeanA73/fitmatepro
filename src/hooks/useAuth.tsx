@@ -2,6 +2,7 @@ import { useEffect, useState, createContext, useContext, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import { clearOnboardingCache } from '@/lib/onboarding';
 
 interface Profile {
   id: string;
@@ -14,12 +15,18 @@ interface Profile {
   weight_kg?: number;
   activity_level?: string;
   fitness_goals?: string[];
-  health_conditions?: string[];
   subscription_plan?: string;
+  account_status?: 'active' | 'paused';
+  paused_at?: string | null;
   created_at: string;
   updated_at: string;
 }
 
+// No health_conditions field. The column is dropped in
+// supabase/migrations/20260818000000_drop_profiles_health_conditions.sql:
+// it recorded diagnosed medical conditions (sensitive information under the
+// Privacy Act 1988) and no feature ever read it. Do not reintroduce it here
+// without a feature that genuinely needs it and a consent flow to match.
 interface SignUpAdditionalData {
   full_name?: string;
   date_of_birth?: string;
@@ -28,7 +35,6 @@ interface SignUpAdditionalData {
   weight_kg?: number;
   activity_level?: string;
   fitness_goals?: string[];
-  health_conditions?: string[];
 }
 
 interface AuthResponse {
@@ -61,24 +67,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(false);
+  // Starts true, not false. supabase.auth.getSession() reads the token out of
+  // localStorage asynchronously, so on a hard load of a protected route the
+  // first render happens before the session is restored. With loading = false
+  // ProtectedRoute skipped its spinner, saw user === null, and redirected a
+  // signed-in user to /auth. In-app navigation worked only because the session
+  // had already been restored by then.
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     // Get initial session
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        await fetchProfile(
-          session.user.id,
-          session.user.email ?? undefined,
-          (session.user.user_metadata as Record<string, unknown>)?.full_name as string | undefined
-        );
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setSession(session);
+        setUser(session?.user ?? null);
+
+        if (session?.user) {
+          await fetchProfile(
+            session.user.id,
+            session.user.email ?? undefined,
+            (session.user.user_metadata as Record<string, unknown>)?.full_name as string | undefined
+          );
+        }
+      } finally {
+        // finally, not a trailing statement: if getSession() rejects, loading
+        // must still clear. Otherwise the fix above turns a wrong redirect into
+        // a permanent spinner, which is worse.
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     getSession();
@@ -123,7 +141,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (data) {
-        setProfile(data);
+        // account_status is TEXT + a CHECK constraint at the DB level (see
+        // 20260818000200_profiles_account_status.sql), not a Postgres enum, so
+        // the generated row type widens it to `string`. Profile narrows it back
+        // to the two values the constraint actually allows.
+        setProfile(data as Profile);
       } else {
         // Profile doesn't exist, create a minimal one
         const { data: newProfile, error: insertError } = await supabase
@@ -137,8 +159,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             height_cm: null,
             weight_kg: null,
             activity_level: null,
-            fitness_goals: [],
-            health_conditions: []
+            fitness_goals: []
           }])
           .select()
           .single();
@@ -148,7 +169,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
 
         if (newProfile) {
-          setProfile(newProfile);
+          setProfile(newProfile as Profile);
         }
       }
     } catch (error) {
@@ -185,8 +206,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             height_cm: additionalData.height_cm || null,
             weight_kg: additionalData.weight_kg || null,
             activity_level: additionalData.activity_level || null,
-            fitness_goals: additionalData.fitness_goals || [],
-            health_conditions: additionalData.health_conditions || []
+            fitness_goals: additionalData.fitness_goals || []
           }]);
 
         if (profileError) {
@@ -194,10 +214,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
 
-      toast({
-        title: "Welcome to FitMatePro!",
-        description: "Your account has been created successfully.",
-      });
+      // Only greet the user when they are actually signed in. With email
+      // confirmation enabled, signUp returns a user but no session, and an
+      // unconditional "Welcome!" read as "you're in" while the caller was about
+      // to bounce off a ProtectedRoute. The pending-confirmation case is
+      // explained by the caller's own UI, which can name the address.
+      if (data.session) {
+        toast({
+          title: "Welcome to FitMatePro!",
+          description: "Your account has been created successfully.",
+        });
+      }
 
       return { data, error: null };
     } catch (error) {
@@ -245,12 +272,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     try {
       setLoading(true);
-      
+
       // Clear state first
       setUser(null);
       setProfile(null);
       setSession(null);
-      
+
+      // Otherwise the next account to sign in on this browser inherits the
+      // previous user's onboarding flag and skips onboarding.
+      clearOnboardingCache();
+
       // Then sign out from Supabase
       const { error } = await supabase.auth.signOut();
       
@@ -289,14 +320,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) throw error;
 
-      setProfile(data);
-      
+      setProfile(data as Profile);
+
       toast({
         title: "Profile updated",
         description: "Your profile has been updated successfully.",
       });
 
-      return { data, error: null };
+      return { data: data as Profile, error: null };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       toast({

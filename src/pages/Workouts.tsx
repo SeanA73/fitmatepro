@@ -4,109 +4,52 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Search, Clock, Users, Flame, Filter, Play, Plus, Target } from "lucide-react";
+import { ArrowLeft, Search, Clock, Play, Plus, Target } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { preBuiltPrograms, WorkoutProgram } from "@/data/workoutPrograms";
+import { preBuiltPrograms, standaloneWorkouts, standaloneWorkoutDuration, WorkoutProgram } from "@/data/workoutPrograms";
 import WorkoutProgramCard from "@/components/workout/WorkoutProgramCard";
 import CreateWorkoutForm from "@/components/workout/CreateWorkoutForm";
 import { ProductRecommendations } from "@/components/shop/ProductRecommendations";
+import FitMateHeader from "@/components/FitMateHeader";
+import { useWorkoutPlans, readPlanFormat, toDifficultyLevel } from "@/hooks/useWorkoutPlans";
+import type { Json } from "@/integrations/supabase/types";
+
+// Rehydrate a WorkoutProgram from the JSONB payload, forcing the program id to
+// the workout_plans row id so edits update the right row.
+const readProgram = (exercises: Json, rowId: string): WorkoutProgram | null => {
+  if (!exercises || typeof exercises !== 'object' || Array.isArray(exercises)) return null;
+  const stored = (exercises as Record<string, unknown>).program;
+  if (!stored || typeof stored !== 'object') return null;
+  return { ...(stored as WorkoutProgram), id: rowId };
+};
 
 const Workouts = () => {
   const navigate = useNavigate();
+  const { plans, savePlan } = useWorkoutPlans();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("programs");
-  const [customPrograms, setCustomPrograms] = useState<WorkoutProgram[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState("All");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingProgram, setEditingProgram] = useState<WorkoutProgram | null>(null);
 
-  const workoutCategories = [
-    { name: "HIIT", count: 45, color: "bg-motivation-gradient" },
-    { name: "Yoga", count: 32, color: "bg-calm-gradient" },
-    { name: "Strength", count: 28, color: "bg-success" },
-    { name: "Cardio", count: 38, color: "bg-wellness-gradient" },
-  ];
-
-  const allWorkouts = [
-    {
-      title: "Morning Energy Boost",
-      duration: "15 min",
-      difficulty: "Beginner",
-      calories: "80-120",
-      type: "HIIT",
-      participants: 247,
-      description: "Perfect start to your day with energizing movements",
-      instructor: "Sarah M.",
-      rating: 4.8,
-    },
-    {
-      title: "Full Body Power Hour", 
-      duration: "60 min",
-      difficulty: "Advanced",
-      calories: "400-550",
-      type: "Strength",
-      participants: 189,
-      description: "Comprehensive strength training for all muscle groups",
-      instructor: "Mike T.",
-      rating: 4.9,
-    },
-    {
-      title: "Sunset Yoga Flow",
-      duration: "45 min", 
-      difficulty: "Intermediate",
-      calories: "150-200",
-      type: "Yoga",
-      participants: 312,
-      description: "Relaxing flow to unwind and stretch after a long day",
-      instructor: "Luna K.",
-      rating: 4.7,
-    },
-    {
-      title: "Cardio Dance Party",
-      duration: "30 min",
-      difficulty: "All Levels", 
-      calories: "200-300",
-      type: "Cardio",
-      participants: 156,
-      description: "Fun dance moves that'll get your heart pumping",
-      instructor: "Carlos R.",
-      rating: 4.6,
-    },
-    {
-      title: "Core Strength Builder",
-      duration: "20 min",
-      difficulty: "Intermediate",
-      calories: "120-180",
-      type: "Strength", 
-      participants: 203,
-      description: "Targeted core workout for stability and strength",
-      instructor: "Emma L.",
-      rating: 4.8,
-    },
-    {
-      title: "Mindful Morning Stretch",
-      duration: "25 min",
-      difficulty: "Beginner",
-      calories: "60-90",
-      type: "Yoga",
-      participants: 278,
-      description: "Gentle stretches to awaken your body mindfully",
-      instructor: "David P.",
-      rating: 4.5,
-    },
-  ];
-
-  const filteredWorkouts = allWorkouts.filter(workout =>
-    workout.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    workout.type.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Persisted in workout_plans rather than component state, so they survive a
+  // refresh. Only rows written by this page — CustomWorkoutBuilder stores a
+  // different shape in the same table.
+  const customPrograms = plans
+    .filter(plan => readPlanFormat(plan.exercises) === 'workout_program')
+    .map(plan => readProgram(plan.exercises, plan.id))
+    .filter((program): program is WorkoutProgram => program !== null);
 
   const allPrograms = [...preBuiltPrograms, ...customPrograms];
-  
-  const filteredPrograms = allPrograms.filter(program =>
-    program.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    program.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    program.goals.some(goal => goal.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+
+  const filteredPrograms = allPrograms.filter(program => {
+    const matchesCategory = selectedCategory === 'All' || program.category === selectedCategory;
+    const matchesSearch =
+      program.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      program.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      program.goals.some(goal => goal.toLowerCase().includes(searchTerm.toLowerCase()));
+    return matchesCategory && matchesSearch;
+  });
 
   const handleStartProgram = (programId: string) => {
     navigate(`/program/${programId}`);
@@ -120,13 +63,29 @@ const Workouts = () => {
     }
   };
 
-  const handleSaveProgram = (program: WorkoutProgram) => {
-    if (editingProgram) {
-      setCustomPrograms(prev => prev.map(p => p.id === program.id ? program : p));
-      setEditingProgram(null);
-    } else {
-      setCustomPrograms(prev => [...prev, program]);
-    }
+  const handleSaveProgram = async (program: WorkoutProgram) => {
+    // Only update in place when editing a row we actually persisted.
+    // "Customizing" a pre-built program saves a new copy instead.
+    const existingRowId = plans.some(plan => plan.id === editingProgram?.id)
+      ? editingProgram?.id
+      : undefined;
+
+    // savePlan raises its own success/error toast and refetches the list.
+    const { error } = await savePlan({
+      id: existingRowId,
+      name: program.name,
+      description: program.description,
+      difficulty_level: toDifficultyLevel(program.difficulty),
+      workout_type: [program.category],
+      // duration_minutes stays null: the program is measured in weeks and
+      // days per week, not minutes.
+      exercises: { format: 'workout_program', program } as unknown as Json,
+    });
+
+    // Keep the form open on failure so the user's work isn't thrown away.
+    if (error) return;
+
+    setEditingProgram(null);
     setShowCreateForm(false);
   };
 
@@ -137,7 +96,8 @@ const Workouts = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
+      <FitMateHeader />
+      {/* Page context bar */}
       <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center gap-4">
@@ -184,10 +144,8 @@ const Workouts = () => {
                   className="pl-10"
                 />
               </div>
-              <Button variant="outline">
-                <Filter className="w-4 h-4" />
-                Filters
-              </Button>
+              {/* The old "Filters" button had no handler and no filter model
+                  behind it. Search plus the category row below are the filters. */}
               <Button onClick={() => setShowCreateForm(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Create Program
@@ -205,17 +163,31 @@ const Workouts = () => {
                 {/* Program Categories */}
                 <div>
                   <h2 className="text-lg font-semibold mb-4">Categories</h2>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    {['All', 'Weightlifting', 'Bodybuilding', 'General Fitness', 'Cardio', 'Strength', 'Powerlifting'].map((category) => (
-                      <Card key={category} className="cursor-pointer hover:shadow-card-hover transition-smooth">
-                        <CardContent className="p-4 text-center">
-                          <div className="w-12 h-12 bg-primary/20 rounded-full mx-auto mb-2 flex items-center justify-center">
-                            <Target className="w-6 h-6 text-primary" />
-                          </div>
-                          <h3 className="font-semibold text-sm">{category}</h3>
-                        </CardContent>
-                      </Card>
-                    ))}
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
+                    {['All', 'Weightlifting', 'Bodybuilding', 'General Fitness', 'Cardio', 'Strength', 'Powerlifting'].map((category) => {
+                      const count = category === 'All'
+                        ? allPrograms.length
+                        : allPrograms.filter(program => program.category === category).length;
+
+                      return (
+                        <Card
+                          key={category}
+                          onClick={() => setSelectedCategory(category)}
+                          className={`cursor-pointer hover:shadow-card-hover transition-smooth ${
+                            selectedCategory === category ? 'border-primary ring-1 ring-primary' : ''
+                          }`}
+                        >
+                          <CardContent className="p-4 text-center">
+                            <div className="w-12 h-12 bg-primary/20 rounded-full mx-auto mb-2 flex items-center justify-center">
+                              <Target className="w-6 h-6 text-primary" />
+                            </div>
+                            <h3 className="font-semibold text-sm">{category}</h3>
+                            {/* Counted from the actual program list, not a fixed number. */}
+                            <p className="text-xs text-muted-foreground">{count}</p>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -243,77 +215,39 @@ const Workouts = () => {
               </TabsContent>
 
               <TabsContent value="individual" className="space-y-8">
-
-                {/* Categories */}
-                <div className="mb-8">
-                  <h2 className="text-lg font-semibold mb-4">Categories</h2>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {workoutCategories.map((category) => (
-                      <Card key={category.name} className="cursor-pointer hover:shadow-card-hover transition-smooth">
-                        <CardContent className="p-4 text-center">
-                          <div className={`w-12 h-12 ${category.color} rounded-full mx-auto mb-2 flex items-center justify-center text-white font-bold text-lg`}>
-                            {category.count}
-                          </div>
-                          <h3 className="font-semibold">{category.name}</h3>
-                          <p className="text-xs text-muted-foreground">{category.count} workouts</p>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Workout List */}
+                {/* One card per real standalone session. This list used to hold
+                    six invented workouts with invented instructors, ratings and
+                    "joined" counts, all six of which opened the same session. */}
                 <div>
-                  <h2 className="text-lg font-semibold mb-4">All Workouts ({filteredWorkouts.length})</h2>
+                  <h2 className="text-lg font-semibold mb-4">
+                    Quick Workouts ({standaloneWorkouts.length})
+                  </h2>
                   <div className="grid gap-4">
-                    {filteredWorkouts.map((workout, index) => (
-                      <Card key={index} className="hover:shadow-card-hover transition-smooth">
+                    {standaloneWorkouts.map((workout) => (
+                      <Card key={workout.id} className="hover:shadow-card-hover transition-smooth">
                         <CardContent className="p-6">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-3 mb-2">
                                 <h3 className="text-lg font-semibold">{workout.title}</h3>
-                                <Badge variant="outline">{workout.type}</Badge>
-                                <Badge variant={workout.difficulty === "Beginner" ? "secondary" : workout.difficulty === "Advanced" ? "destructive" : "default"}>
-                                  {workout.difficulty}
-                                </Badge>
+                                <Badge variant="secondary">{workout.difficulty}</Badge>
                               </div>
-                              
+
                               <p className="text-muted-foreground mb-3">{workout.description}</p>
-                              
-                              <div className="flex items-center gap-6 text-sm text-muted-foreground mb-3">
+
+                              <div className="flex items-center gap-6 text-sm text-muted-foreground">
                                 <div className="flex items-center gap-1">
                                   <Clock className="w-4 h-4" />
-                                  {workout.duration}
+                                  {Math.round(standaloneWorkoutDuration(workout) / 60)} min
                                 </div>
-                                <div className="flex items-center gap-1">
-                                  <Flame className="w-4 h-4" />
-                                  {workout.calories} cal
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Users className="w-4 h-4" />
-                                  {workout.participants} joined
-                                </div>
-                              </div>
-                              
-                              <div className="flex items-center gap-4 text-sm">
-                                <span className="text-muted-foreground">Instructor: {workout.instructor}</span>
-                                <div className="flex items-center gap-1">
-                                  <span className="text-yellow-500">★</span>
-                                  <span className="font-medium">{workout.rating}</span>
-                                </div>
+                                <span>{workout.exercises.length} exercises</span>
                               </div>
                             </div>
-                            
-                            <div className="flex flex-col gap-2">
-                              <Button variant="wellness" onClick={() => navigate(`/workout/${index}`)}>
-                                <Play className="w-4 h-4" />
-                                Start Workout
-                              </Button>
-                              <Button variant="outline" size="sm">
-                                Preview
-                              </Button>
-                            </div>
+
+                            <Button variant="wellness" onClick={() => navigate(`/workout/${workout.id}`)}>
+                              <Play className="w-4 h-4" />
+                              Start Workout
+                            </Button>
                           </div>
                         </CardContent>
                       </Card>
