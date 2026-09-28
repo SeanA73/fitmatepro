@@ -141,7 +141,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (data) {
-        setProfile(data);
+        // account_status is TEXT + a CHECK constraint at the DB level (see
+        // 20260818000200_profiles_account_status.sql), not a Postgres enum, so
+        // the generated row type widens it to `string`. Profile narrows it back
+        // to the two values the constraint actually allows.
+        setProfile(data as Profile);
       } else {
         // Profile doesn't exist, create a minimal one
         const { data: newProfile, error: insertError } = await supabase
@@ -165,7 +169,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
 
         if (newProfile) {
-          setProfile(newProfile);
+          setProfile(newProfile as Profile);
         }
       }
     } catch (error) {
@@ -316,14 +320,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) throw error;
 
-      setProfile(data);
-      
+      setProfile(data as Profile);
+
       toast({
         title: "Profile updated",
         description: "Your profile has been updated successfully.",
       });
 
-      return { data: { user, session }, error: null };
+      return { data: data as Profile, error: null };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       toast({

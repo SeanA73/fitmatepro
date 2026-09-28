@@ -77,7 +77,7 @@ These use plain `process.env`, without the `VITE_` prefix:
 ### Edge function secrets (set in Supabase, not `.env`)
 
 ```sh
-supabase secrets set STRIPE_SECRET_KEY=... STRIPE_WEBHOOK_SECRET=... LOVABLE_API_KEY=...
+supabase secrets set STRIPE_SECRET_KEY=... STRIPE_WEBHOOK_SECRET=... OPENAI_API_KEY=...
 ```
 
 `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected into the function
@@ -89,7 +89,7 @@ runtime automatically and do not need setting.
 |---|---|---|---|
 | `create-checkout-session` | default (true) | `STRIPE_SECRET_KEY` | Creates a Stripe Checkout session for the premium plan |
 | `stripe-webhook` | **false** | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Applies subscription state from Stripe events. The sole writer of entitlement. |
-| `recommend-products` | default (true) | `LOVABLE_API_KEY` | AI product recommendations via `ai.gateway.lovable.dev` (`google/gemini-2.5-flash`) |
+| `recommend-products` | default (true) | `OPENAI_API_KEY` | AI product recommendations via `api.openai.com` (`gpt-4o-mini`) |
 
 `stripe-webhook` sets `verify_jwt = false` deliberately: Stripe signs requests
 with its own scheme and cannot present a Supabase JWT. With JWT verification on,
